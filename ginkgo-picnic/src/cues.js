@@ -70,14 +70,20 @@ export const FW_DIR = [16, -26];
 export const FIREWORKS = (() => {
   const times = [42.4, 43.4, 44.2, 45.0, 45.7, 46.5, 47.2, 48.0, 48.5, 49.0, 49.4, 49.9, 50.3, 50.8, 51.2, 51.7, 53.0, 54.6, 56.0, 57.4, 58.7];
   const pal = [[1, .78, .42], [1, .42, .5], [.5, .82, 1], [.68, 1, .55], [1, .62, .92], [1, .93, .7], [1, .58, .25]];
-  const r = rng(77);
-  return times.map((t, i) => {
+  const r = rng(77), out = [];
+  times.forEach((t, i) => {
     const big = (t === 50.8 || t === 57.4 || t === 42.4);
-    return { t, x: 16 + (r() - .5) * 26, y: 16 + r() * 8 + (big ? 2 : 0), z: -27 + (r() - .5) * 8, col: big ? pal[0] : pal[Math.floor(r() * pal.length)], col2: pal[Math.floor(r() * pal.length)], size: big ? 7.5 : 4 + r() * 2.5, type: big ? 2 : Math.floor(r() * 2), seed: i * 13 + 5 };
+    out.push({ t, x: 14 + (r() - .5) * 34, y: 19 + r() * 9 + (big ? 2 : 0), z: -27 + (r() - .5) * 8, col: big ? pal[0] : pal[Math.floor(r() * pal.length)], col2: pal[Math.floor(r() * pal.length)], size: big ? 10 : 6.5 + r() * 2.5, type: big ? 2 : Math.floor(r() * 2), seed: i * 13 + 5 });
   });
+  // extra bursts all around the park so the whole sky is full (quieter in the mix)
+  for (let t = 43.1, i = 0; t < 59; t += (t < 52 ? .36 : .62) + r() * .25, i++) {
+    const a = r() * 6.283, d = 30 + r() * 12;
+    out.push({ t: Math.round(t * 24) / 24, x: Math.cos(a) * d, y: 17 + r() * 13, z: Math.sin(a) * d, col: pal[Math.floor(r() * pal.length)], col2: pal[Math.floor(r() * pal.length)], size: 5.5 + r() * 3.5, type: Math.floor(r() * 2), seed: 400 + i * 7, bg: 1 });
+  }
+  return out.sort((p, q) => p.t - q.t);
 })();
 // flash envelope of all bursts at time t -> [r,g,b] intensity
-export function fwFlash(t) { const c = [0, 0, 0]; for (const f of FIREWORKS) { const a = t - f.t; if (a < 0 || a > 2.2) continue; const e = Math.exp(-a * 2.2) * (a < .06 ? a / .06 : 1) * f.size / 5; c[0] += f.col[0] * e; c[1] += f.col[1] * e; c[2] += f.col[2] * e; } return c; }
+export function fwFlash(t) { const c = [0, 0, 0]; for (const f of FIREWORKS) { const a = t - f.t; if (a < 0 || a > 2.2) continue; const e = Math.exp(-a * 2.2) * (a < .06 ? a / .06 : 1) * f.size / 8 * (f.bg ? .5 : 1); c[0] += f.col[0] * e; c[1] += f.col[1] * e; c[2] += f.col[2] * e; } return c; }
 
 export function env(t) {
   return { day: 1 - S(35.5, 41.5, t), gold: S(32, 37, t) * (1 - S(39, 42, t)), dusk: S(35, 38.8, t), night: S(39.2, 42.5, t), lamp: S(T.lanterns, T.lanterns + .7, t) };

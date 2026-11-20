@@ -69,7 +69,7 @@ function pose(i, t, c) {
     P.hop += bump(t, T.whistle + .15 + i * .02, .3) * .08;
     const wF = S(42.0, 43.0, t) * (1 - S(52.0, 53.2, t));
     P.yaw = mixAngle(P.yaw, Math.atan2(FW_DIR[0] - P.x, FW_DIR[1] - P.z), wF); P.tilt += .3 * wF; if (wF > .5) P.eye = 'wide';
-    if (t < 53) for (const f of FIREWORKS) { const d = t - f.t - .1 - hash(i, f.seed) * .25; if (d > 0 && d < 1.2) { P.open = Math.max(P.open, .7 * Math.exp(-d * 2)); if (d < .4 && hash(i + 7, f.seed) < .45) P.hop += Math.sin(Math.PI * d / .4) * .13; } }
+    if (t < 53) for (const f of FIREWORKS) { if (f.bg) continue; const d = t - f.t - .1 - hash(i, f.seed) * .25; if (d > 0 && d < 1.2) { P.open = Math.max(P.open, .7 * Math.exp(-d * 2)); if (d < .4 && hash(i + 7, f.seed) < .45) P.hop += Math.sin(Math.PI * d / .4) * .13; } }
     const wCh = win(t, 48.4, 52.0, .4) * (hash(i, 3) < .7 ? 1 : .4); P.aP.raise = lerp(P.aP.raise, 2.5 + .25 * Math.sin(t * 9 + i), wCh); if (wCh > .6) P.eye = 'happy';
     if (id === 'hsw') {
       P.yaw += .55 * Math.sin((t - 52.9) * 2 * Math.PI / 1.5) * win(t, 52.9, 54.4, .25);
@@ -133,8 +133,8 @@ const SHOTS = [
   u => ({ p: L3([.3, 1.15, .3], [.5, 1.1, .25], u), q: [4.4, .55, 0], fov: 44 }),
   u => ({ p: L3([0, 3.2, 9.0], [0, 2.3, 6.2], ez(u)), q: [0, .6, -.3], fov: 36 }),
   u => ({ p: L3([0, 2.4, 5.6], [0, 2.1, 5.0], u), q: [0, .85, -.5], fov: 38 }),
-  u => ({ p: L3([.22, 1.02, .08], [.32, .98, .06], u), q: [1.85, .5, .03], fov: 46 }),
-  u => ({ p: L3([-.18, 1.02, -.02], [-.26, .98, -.06], u), q: [-1.7, .58, -.5], fov: 50 }),
+  u => ({ p: L3([.22, 1.02, .08], [.32, .98, .06], u), q: [1.85, .5, .03], fov: 41 }),
+  u => ({ p: L3([-.18, 1.02, -.02], [-.26, .98, -.06], u), q: [-1.7, .58, -.5], fov: 45 }),
   u => ({ p: L3([0, 1.7, 2.9], [0, 1.55, 2.5], u), q: [0, .75, -1.25], fov: 40 }),
   u => ({ p: L3([-2.8, 1.9, 5.0], [-1.2, 1.8, 5.4], u), q: [0, 1.25, -.4], fov: 42 }),
   u => ({ p: L3([-2.5, .9, 6.8], [-2.2, .85, 6.4], u), q: [5.5, 5.5, -9], fov: 52 }),
@@ -154,6 +154,8 @@ function rr(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w
 export function drawOverlay(g, t, cam, cast, Wd, Hd) {
   g.clearRect(0, 0, Wd, Hd); const pv = V3();
   const proj = (x, y, z) => { pv.set(x, y, z).project(cam); return [(pv.x * .5 + .5) * Wd, (-pv.y * .5 + .5) * Hd, pv.z < 1]; };
+  if (!drawOverlay.paper) { const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'); let sd = 7; const rn = () => (sd = (sd * 16807) % 2147483647) / 2147483647; for (let i = 0; i < 5200; i++) { const v = rn(); x.fillStyle = v > .5 ? `rgba(255,250,235,${.03 + rn() * .04})` : `rgba(90,60,30,${.02 + rn() * .03})`; x.fillRect(rn() * 256, rn() * 256, 1 + rn() * 2.4, 1 + rn() * 2.4); } drawOverlay.paper = g.createPattern(c, 'repeat'); }
+  g.fillStyle = drawOverlay.paper; g.fillRect(0, 0, Wd, Hd); g.fillStyle = 'rgba(255,236,200,.05)'; g.fillRect(0, 0, Wd, Hd);
   const vg = g.createRadialGradient(Wd / 2, Hd / 2, Hd * .45, Wd / 2, Hd / 2, Hd * 1.05); vg.addColorStop(0, 'rgba(40,20,5,0)'); vg.addColorStop(1, 'rgba(40,20,5,.42)'); g.fillStyle = vg; g.fillRect(0, 0, Wd, Hd);
   g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
   const s = shotAt(t);

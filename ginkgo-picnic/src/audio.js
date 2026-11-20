@@ -83,11 +83,11 @@ export function buildAudio(sr = 48000) {
   IDS.forEach((id, i) => chirp(T.lanterns + .25 + i * .03, 600 + i * 50, 820 + i * 50, .3, .03, (i - 4) / 5, .4, .02));
 
   // ---------- act 3 ----------
-  for (const f of FIREWORKS) { const pan = Math.max(-.8, Math.min(.8, (f.x - 6) / 20)), g = f.size / 6 * (f.t > 52.5 ? .55 : 1);
+  for (const f of FIREWORKS) { const pan = Math.max(-.8, Math.min(.8, (f.x - 6) / 20)), g = f.size / 9 * (f.t > 52.5 ? .55 : 1) * (f.bg ? .4 : 1);
     { let ph = 0; put(f.t - .95, .95, .035 * g, pan, .5, tt => { ph += TAU * (700 + 1500 * tt * tt) * (1 + .02 * Math.sin(TAU * 18 * tt)) / sr; return Math.sin(ph) * Math.sin(Math.PI * Math.min(1, tt / .95)) ** .7; }); }
     { const l = lp(260), l2 = lp(1800); let ph = 0; put(f.t + .05, 1.8, .9 * g, pan, .7, tt => { ph += TAU * (48 + 40 * Math.exp(-tt * 12)) / sr; return (l(noise()) * 2.2 + Math.sin(ph) * .9) * Math.exp(-tt * 3.2) + l2(noise()) * .5 * Math.exp(-tt * 14); }); }
     { const r = rng(f.seed + 99), h = bp(5200, 1.2); put(f.t + .35, 1.5, .11 * g, pan, .5, tt => h((r() < .012 * (1 - tt / 1.5) * 6 ? (r() * 2 - 1) * 6 : 0)) * (1 - tt / 1.5)); }
-    if (f.t < 52.5) { const r = rng(f.seed); for (let k = 0; k < 5; k++) { const b = 420 + r() * 600; chirp(f.t + .3 + r() * .4, b, b * 1.5, .28 + r() * .2, .028, r() * 2 - 1, .5, .02); } } }
+    if (f.t < 52.5 && !f.bg) { const r = rng(f.seed); for (let k = 0; k < 5; k++) { const b = 420 + r() * 600; chirp(f.t + .3 + r() * .4, b, b * 1.5, .28 + r() * .2, .028, r() * 2 - 1, .5, .02); } } }
   chirp(T.whistle + .2, 600, 1100, .14, .05, 0, .3);
   for (let t = 48.5; t < 52; t += .5) IDS.forEach((id, i) => { if ((i + Math.round(t * 2)) % 3 === 0) chirp(t + i * .03, 640 + i * 50, 980 + i * 50, .2, .04, (i - 4) / 5, .4, .02); });
   // He Shou Wu's line: 12 warm syllables (來年大家還要再次相聚喔！)

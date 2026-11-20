@@ -14,9 +14,18 @@ ov.width = W; ov.height = H; const g2 = ov.getContext('2d');
 const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(40, W / H, .1, 600);
 const world = buildWorld(scene), cast = buildCast(scene);
 
+// ---- storybook look: flat cel bands instead of smooth 3D shading, plus soft brown ink outlines on the cast ----
+const grad = new THREE.DataTexture(new Uint8Array([178, 178, 178, 255, 232, 232, 232, 255, 255, 255, 255, 255]), 3, 1, THREE.RGBAFormat); grad.minFilter = grad.magFilter = THREE.NearestFilter; grad.needsUpdate = true;
+const toonOf = new Map(), linked = [];
+scene.traverse(o => { if (!o.isMesh || !o.material.isMeshStandardMaterial) return; let m = toonOf.get(o.material); if (!m) { const s = o.material; m = new THREE.MeshToonMaterial({ color: s.color, map: s.map, gradientMap: grad, side: s.side, transparent: s.transparent, opacity: s.opacity, vertexColors: s.vertexColors, emissive: s.emissive, emissiveIntensity: s.emissiveIntensity, depthWrite: s.depthWrite }); toonOf.set(s, m); if (s.emissive.getHex()) linked.push([s, m]); } o.material = m; });
+const inkM = new THREE.MeshBasicMaterial({ color: 0x5a3320, side: THREE.BackSide });
+inkM.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n transformed += normalize(normal) * 0.011;'); };
+const inkList = []; cast.cast.forEach(c => c.root.traverse(o => { if (o.isMesh && o.castShadow && o.material.side === THREE.FrontSide && !o.material.transparent) inkList.push(o); }));
+inkList.forEach(o => { const k = new THREE.Mesh(o.geometry, inkM); k.scale.setScalar(1); o.add(k); });
+
 function renderAt(t) {
   t = Math.min(Math.max(t, 0), DUR - 1e-4);
-  setCamera(cam, t); cast.update(t); world.update(t, env(t), cam, renderer);
+  setCamera(cam, t); cast.update(t); world.update(t, env(t), cam, renderer); for (const [a, b] of linked) b.emissiveIntensity = a.emissiveIntensity;
   renderer.render(scene, cam); drawOverlay(g2, t, cam, cast.cast, W, H);
 }
 // ---- export hooks (frame-by-frame render) ----
