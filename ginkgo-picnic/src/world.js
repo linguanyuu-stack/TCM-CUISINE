@@ -251,7 +251,7 @@ export function buildWorld(scene) {
     const dirs = FIREWORKS.map(f => { const r = rng(f.seed), a = []; for (let i = 0; i < PER; i++) { const u = r() * 2 - 1, p = r() * 6.283, s = Math.sqrt(1 - u * u), v = f.type === 1 ? (i % 2 ? 1 : .55) : .75 + r() * .3; a.push([s * Math.cos(p) * v, u * v, s * Math.sin(p) * v, r()]); } return a; });
     upd.push(t => { let n = 0; const put = (x, y, z, r, gg, b, s) => { pos[n * 3] = x; pos[n * 3 + 1] = y; pos[n * 3 + 2] = z; colr[n * 4] = r; colr[n * 4 + 1] = gg; colr[n * 4 + 2] = b; colr[n * 4 + 3] = s; n++; };
       FIREWORKS.forEach((f, fi) => { const age = t - f.t; if (age > -1.0 && age < 0) { const sx = lerp(f.x, 12, .5), sz = f.z; for (let j = 0; j < 12; j++) { const a = Math.max(0, age + 1 - j * .025), k = 1 - Math.pow(1 - a, 2); const fade = (1 - j / 12); put(lerp(sx, f.x, k) + Math.sin(a * 30) * .08, lerp(0, f.y, k), sz, 1 * fade, .8 * fade, .5 * fade, .9 * fade + .25); } }
-        if (age >= 0 && age < 2.8) { const D2 = dirs[fi], will = f.type === 2; for (let i = 0; i < PER; i++) { const d = D2[i]; for (let j = 0; j < TR; j++) { const a = age - j * (will ? .09 : .05); if (a < 0) continue; const k = (1 - Math.exp(-a * 2.4)) / 2.4 * f.size * 4.4; const gy = a * a * (will ? 2.4 : 1.1); const life = will ? 2.7 : 2.0; let br = (1 - S(life * .45, life, a)) * (1 - j / TR) * (a < .08 ? 1.6 : 1); if (a > life * .5) br *= .5 + .5 * Math.sin(a * 40 + d[3] * 60); const c = (i % 3 === 0 && f.type !== 2) ? f.col2 : f.col; const w = a < .15 ? 1 - a / .15 : 0; put(f.x + d[0] * k, f.y + d[1] * k - gy, f.z + d[2] * k, (c[0] * c[0] * .6 + w * .5) * br, (c[1] * c[1] * .6 + w * .5) * br, (c[2] * c[2] * .6 + w * .5) * br, (j === 0 ? .95 : .6) * (.6 + br * .5)); } } if (age < .3) put(f.x, f.y, f.z, 1 - age / .3, (1 - age / .3) * .9, (1 - age / .3) * .7, 9); } });
+        if (age >= 0 && age < 2.8) { const D2 = dirs[fi], will = f.type === 2; for (let i = 0; i < PER; i++) { const d = D2[i]; for (let j = 0; j < TR; j++) { const a = age - j * (will ? .09 : .05); if (a < 0) continue; const k = (1 - Math.exp(-a * 2.4)) / 2.4 * f.size * 5.4; const gy = a * a * (will ? 2.4 : 1.1); const life = will ? 2.7 : 2.0; let br = (1 - S(life * .45, life, a)) * (1 - j / TR) * (a < .08 ? 1.6 : 1); if (a > life * .5) br *= .5 + .5 * Math.sin(a * 40 + d[3] * 60); const c = (i % 3 === 0 && f.type !== 2) ? f.col2 : f.col; const w = a < .15 ? 1 - a / .15 : 0; put(f.x + d[0] * k, f.y + d[1] * k - gy, f.z + d[2] * k, (c[0] * c[0] * .6 + w * .5) * br, (c[1] * c[1] * .6 + w * .5) * br, (c[2] * c[2] * .6 + w * .5) * br, (j === 0 ? .95 : .6) * (.6 + br * .5)); } } if (age < .25) { const fl2 = (1 - age / .25) * .5; put(f.x, f.y, f.z, fl2, fl2 * .9, fl2 * .7, 5); } } });
       g.setDrawRange(0, n); g.attributes.position.needsUpdate = true; g.attributes.acol.needsUpdate = true; }); }
 
   // ---------- per-frame environment ----------
@@ -262,15 +262,15 @@ export function buildWorld(scene) {
     scene.fog.color.copy(cDayFog).lerp(cGoldFog, e.gold * .8).lerp(cNightFog, e.night); waterU.uFog.value.copy(scene.fog.color);
     const low = 1 - e.day; sun.position.set(lerp(-7, -12, low), lerp(10, 3.2, low), lerp(5, 4, low)).multiplyScalar(2.5); skyU.uSun.value.copy(sun.position).normalize();
     sun.color.set(0xfff0d2).lerp(tmp.set(0xff8a3c), sat(e.gold * .85 + low * .5)); sun.intensity = 3.1 * e.day * (1 - e.night);
-    hemi.color.set(0xdcecff).lerp(tmp.set(0xffc9a0), e.gold * .6).lerp(tmp.set(0x33427c), e.night); hemi.groundColor.set(0x9a8a55).lerp(tmp.set(0x141a30), e.night); hemi.intensity = lerp(1.45, .7, e.night);
-    fill.intensity = .55 * (1 - e.night) + .0; moon.intensity = .75 * e.night;
-    const fl = Math.hypot(f[0], f[1], f[2]); fwL.intensity = Math.min(fl * .9, 1.15) * e.night; if (fl > 0.001) fwL.color.setRGB(f[0] / fl, f[1] / fl, f[2] / fl).lerp(tmp.set(0xffffff), .3);
+    hemi.color.set(0xdcecff).lerp(tmp.set(0xffc9a0), e.gold * .6).lerp(tmp.set(0x33427c), e.night); hemi.groundColor.set(0x9a8a55).lerp(tmp.set(0x141a30), e.night); hemi.intensity = lerp(1.45, .55, e.night);
+    fill.intensity = .55 * (1 - e.night) + .0; moon.intensity = .4 * e.night;
+    const fl = Math.hypot(f[0], f[1], f[2]); fwL.intensity = Math.min(fl * .8, .85) * e.night; if (fl > 0.001) fwL.color.setRGB(f[0] / fl, f[1] / fl, f[2] / fl).lerp(tmp.set(0xffffff), .3);
     const flick = .8 + .12 * Math.sin(t * 13.1) + .08 * Math.sin(t * 23.7 + 1); fire.intensity = flick * lerp(1.2, 3.5, e.night); emberM.color.setRGB(1, .35 + .2 * flick, .1);
-    lampL.forEach((l, i) => { l.intensity = e.lamp * (6 + Math.sin(t * 3 + i * 2) * .3); }); lanternM.emissiveIntensity = e.lamp * 2.4; haloU.uA.value = e.lamp * .55;
+    lampL.forEach((l, i) => { l.intensity = e.lamp * (4.6 + Math.sin(t * 3 + i * 2) * .3); }); lanternM.emissiveIntensity = e.lamp * 2.4; haloU.uA.value = e.lamp * .55;
     lanterns.forEach((g, i) => { g.rotation.z = Math.sin(t * 1.1 + i * .9) * .07; g.rotation.x = Math.sin(t * .8 + i * 1.7) * .04; });
     rayU.forEach(u => { u.uA.value = (.13 + .07 * Math.sin(t * .5 + u.uPh.value)) * e.day * (1 + e.gold * .6); });
     cloudM.color.set(0xffffff).lerp(tmp.set(0xffb890), e.gold).lerp(tmp.set(0x1a2348), e.night); cloudM.opacity = lerp(.9, .5, e.night);
-    steamU.uCol.value.set(0xffffff).lerp(tmp.set(0xffd9b0), e.night * .6); steamU.uOp.value = lerp(.2, .3, e.night);
+    steamU.uCol.value.set(0xffffff).lerp(tmp.set(0xffd9b0), e.night * .6); steamU.uOp.value = lerp(.2, .17, e.night);
     renderer.toneMappingExposure = lerp(1.0, 1.08, e.night) * (1 + e.gold * .08);
     for (const u of upd) u(t, e, cam);
   }
