@@ -4,3 +4,4 @@ build/stills/
 build/audio.wav
 build/*.mp4
 build/render.log
+build/review/
