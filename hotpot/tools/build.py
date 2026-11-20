@@ -6,7 +6,7 @@ from PIL import Image
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.dirname(HERE)
 ORDER = [('hotpot/src', 'util.js'), ('src', 'draw.js'), ('hotpot/src', 'rig.js'), ('hotpot/src', 'props.js'),
-         ('hotpot/src', 'cues.js'), ('hotpot/src', 'scenes.js'), ('hotpot/src', 'audio.js'), ('hotpot/src', 'main.js')]
+         ('hotpot/src', 'cues.js'), ('hotpot/src', 'scenes.js'), ('hotpot/src', 'scenes2.js'), ('hotpot/src', 'scenes3.js'), ('hotpot/src', 'audio.js'), ('hotpot/src', 'main.js')]
 IMGS = ['wu_tex', 'wu_sprout', 'tex_cape', 'di_body', 'di_yawn']
 def b64img(p):
     buf = io.BytesIO(); Image.open(p).save(buf, 'WEBP', quality=94, method=6)

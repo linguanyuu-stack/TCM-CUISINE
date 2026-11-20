@@ -23,7 +23,7 @@ function drawEndCard(ctx, t) {
   const c = ACT['endcard']; if (!c || t < c.t) return; const a = ease((t - c.t) / .8);
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.save();
   ctx.fillStyle = `rgba(20,24,52,${.45 * a})`; ctx.fillRect(0, 0, W, H);
-  ctx.globalAlpha = a; ctx.font = '700 64px "TitleTC"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.globalAlpha = a; ctx.font = '700 70px "TitleTC"'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const y = 900; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(60,30,10,.55)'; ctx.lineWidth = 10; ctx.strokeText(END_CARD, W / 2, y);
   ctx.fillStyle = '#fff4dc'; ctx.fillText(END_CARD, W / 2, y);
   drawGinkgo(ctx, W / 2, y + 80, 34, Math.PI, '#f2c03a', {});

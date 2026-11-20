@@ -31,3 +31,28 @@ node tools/stills.js dist/film.html /tmp/stills 30 44.5 49.5 57   # review still
 
 ## Sources
 `assets/refs/` holds the supplied storyboard, character sheets and poster. `assets/sprites/` holds the cut-outs. `assets/font/title.woff2` is a 19-glyph subset of LXGW WenKai TC Bold (SIL OFL) used for the title.
+
+---
+
+# 差點錯過的圍爐 · The Hot Pot Gathering I Almost Missed
+
+A 150-second short for 宜康中醫. It is 1080×1920 at 24 fps, with music, sound effects and three Mandarin lines. Source is in `hotpot/`.
+
+| file | what |
+|---|---|
+| `dist/hotpot.html` | Self-contained playable film. Character art, font and voice clips are embedded; the music and sound effects are synthesized in the page. |
+| `dist/hotpot_doortest.html` | Shot 03 on its own (20–34 s). |
+| `dist/The_Hot_Pot_Gathering_I_Almost_Missed.mp4` | Rendered film, −16 LUFS integrated. Not committed. |
+| `dist/hotpot_motiontest_shot03.mp4` | 8 s doorway motion test (21–29 s). Not committed. |
+| `dist/hotpot_contact_sheet_1fps.png`, `dist/hotpot_motiontest_contact.png` | Review sheets. |
+
+## How it works
+- **Rigs** (`hotpot/src/rig.js`): all nine characters are built from separately animated parts: body, eyes with lids and look direction, mouth shapes, cheeks, arms with gripping hands, feet, and accessories. 地地 uses his sheet art with the face painted out, with an animated face layer on top. 烏烏's body is painted with texture sampled from his sheet.
+- **Walking** (`gait()` in `util.js`): each foot is fixed in world space while it's planted and swings two strides while the body moves one. Walk tracks (`WALKS` in `cues.js`) end on whole steps, so both feet finish planted. Every whole step also places a footfall in the audio. In shot 03 the feet are projected from a floor plan, so the planted foot stays fixed on the boards as 烏烏 backs up with the door.
+- **One cue list** (`hotpot/src/cues.js`) holds the shots, actions with their sound effects, voices, ambience levels, chords and melody. Lip-sync is driven by each voice clip's loudness.
+- **Voices**: generated offline with Kokoro TTS (sherpa-onnx; voices zm_yunxia, zm_yunxi, zf_xiaobei) and checked with an offline Mandarin speech recognizer, both on the raw clips and on the final mix.
+
+```bash
+python3 hotpot/tools/build.py                       # → dist/hotpot.html
+node tools/render.js dist/hotpot.html dist/The_Hot_Pot_Gathering_I_Almost_Missed.mp4 0 150
+```

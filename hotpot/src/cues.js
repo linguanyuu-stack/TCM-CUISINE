@@ -57,18 +57,18 @@ const CUES = [
   { kind: 'act', id: 'c.try1', t: 36.6, d: .7, sfx: [{ n: 'tick', at: .55, g: .35 }] },
   { kind: 'act', id: 'c.try2', t: 37.5, d: .7, sfx: [{ n: 'tick', at: .55, g: .35 }] },
   { kind: 'act', id: 'c.click', t: 38.5, d: .55, sfx: [{ n: 'clasp', at: .45, g: .8 }] },
-  { kind: 'act', id: 'c.walk', t: 39.6, d: 2.2, sfx: [0, .5, 1, 1.5].map(a => ({ n: 'woodstep', at: a + .25, g: .4, pan: .2 })) },
+  { kind: 'act', id: 'c.walk', t: 39.6, d: 2.2 },
   { kind: 'act', id: 'c.notice', t: 41.9, d: .5, sfx: [{ n: 'twinkle', at: 0, g: .25 }] },
-  { kind: 'act', id: 'c.back', t: 42.4, d: 1.2, sfx: [{ n: 'woodstep', at: .4, g: .4 }, { n: 'woodstep', at: .95, g: .4 }] },
+  { kind: 'act', id: 'c.back', t: 42.4, d: 1.2 },
   { kind: 'act', id: 'c.shoe', t: 43.6, d: .7, sfx: [{ n: 'tap', at: .55, g: .5 }] },
-  { kind: 'act', id: 'c.exit', t: 44.4, d: 1.6, sfx: [{ n: 'woodstep', at: .3, g: .35 }, { n: 'woodstep', at: .8, g: .3 }, { n: 'doorclose', at: 1.3, g: .4 }] },
+  { kind: 'act', id: 'c.exit', t: 44.4, d: 1.6, sfx: [{ n: 'doorclose', at: 1.45, g: .4, pan: .6 }] },
 
   // ---------------- 05 bus ----------------
   { kind: 'act', id: 'b.walk', t: 46.0, d: 2.2 },
   { kind: 'act', id: 'b.step', t: 48.2, d: .8, sfx: [{ n: 'busstep', at: .6, g: .55 }] },
   { kind: 'act', id: 'b.rail', t: 48.3, d: .4, sfx: [{ n: 'tink', at: .38, g: .45 }] },
   { kind: 'act', id: 'b.in', t: 49.0, d: 1.6 },
-  { kind: 'act', id: 'b.doors', t: 50.7, d: .8, sfx: [{ n: 'busdoor', at: 0, g: .6 }] },
+  { kind: 'act', id: 'b.doors', t: 51.0, d: .6, sfx: [{ n: 'busdoor', at: 0, g: .6 }] },
   { kind: 'act', id: 'b.soften', t: 53.2, d: 2.4 },
   // ---------------- 06 park stop ----------------
   { kind: 'act', id: 'p.doors', t: 57.2, d: .8, sfx: [{ n: 'busdoor', at: 0, g: .55 }] },
@@ -157,3 +157,30 @@ function mouthOpen(who, t) {
   const i = Math.floor(d * 100); return clamp(Math.pow(E.e[Math.min(E.e.length - 1, i)] || 0, .6) * 1.15);
 }
 const talking = (who, t) => { const c = VOICE[who]; return c && ENV && t >= c.t - .05 && t <= c.t + ENV[who].dur + .05; };
+
+// ---------------------------------------------------------------------------
+// Walks: [[t, steps], …] keys in whole steps. Scenes read the distance, audio
+// places a footfall at every integer step (the frame both feet are planted).
+// ---------------------------------------------------------------------------
+const WALKS = {
+  'hall1':  { keys: [[39.6, 0], [41.6, 3]], snd: 'woodstep', g: .4, pan: .1 },
+  'hall2':  { keys: [[42.4, 0], [43.5, 2]], snd: 'woodstep', g: .38, pan: 0 },
+  'hall3':  { keys: [[44.4, 0], [46.2, 6]], snd: 'woodstep', g: .35, pan: .4 },
+  'bus.wu': { keys: [[46.0, 0], [48.2, 6]], snd: 'step', g: .3, pan: -.3 },
+  'bus.gui': { keys: [[46.0, 0], [49.2, 7]], snd: 'step', g: .22, pan: -.5 },
+  'bus.qi': { keys: [[46.0, 0], [50.1, 10]], snd: 'step', g: .22, pan: -.6 },
+  'park.wu': { keys: [[59.0, 0], [62.4, 8]], snd: 'step', g: .3, pan: .2 },
+  'park.gui': { keys: [[59.6, 0], [63.2, 8]], snd: 'step', g: .2, pan: .1 },
+  'park.qi': { keys: [[60.2, 0], [63.6, 10]], snd: 'step', g: .2, pan: 0 },
+  'br.wu':  { keys: [[66.0, 0], [72.6, 16]], snd: 'plank', g: .45, pan: 0 },
+  'br.gui': { keys: [[66.0, 0], [72.6, 18]], snd: 'plank', g: .3, pan: -.2 },
+  'br.qi':  { keys: [[66.0, 0], [72.6, 22]], snd: 'plank', g: .3, pan: .2 },
+  'f.wu':   { keys: [[72.6, 0], [79.0, 14]], snd: 'grass', g: .4, pan: 0 },
+  'f.gui':  { keys: [[72.6, 0], [79.0, 16]], snd: 'grass', g: .28, pan: -.2 },
+  'f.qi':   { keys: [[72.6, 0], [79.0, 20]], snd: 'grass', g: .28, pan: .2 },
+  't.wu':   { keys: [[79.2, 0], [82.6, 6], [84.8, 8], [88.4, 8], [89.6, 10]], snd: 'grass', g: .35, pan: -.2 },
+  't.gui':  { keys: [[79.2, 0], [83.4, 8], [87.6, 8], [88.8, 10]], snd: 'grass', g: .22, pan: -.3 },
+  't.qi':   { keys: [[79.2, 0], [83.8, 12], [87.8, 12], [89.0, 14]], snd: 'grass', g: .22, pan: 0 },
+};
+const walkN = (id, t) => track(WALKS[id].keys, t, ease);
+const walkMoving = (id, t) => Math.abs(walkN(id, t + .02) - walkN(id, t - .02)) > .002;

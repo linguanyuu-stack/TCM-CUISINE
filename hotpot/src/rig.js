@@ -174,8 +174,8 @@ function drawWu(ctx, P) {
     if (cape !== 'off') {
       const fas = cape === 'on' ? 1 : (P.fasten || 0);
       const band = (x0, y0, x1, y1, cy) => { const p = new Path2D(); p.moveTo(x0, y0 - 15); p.quadraticCurveTo((x0 + x1) / 2, cy - 15, x1, y1 - 15); p.lineTo(x1, y1 + 17); p.quadraticCurveTo((x0 + x1) / 2, cy + 17, x0, y0 + 17); p.closePath(); return p; };
-      const L1 = P.capeL || [lerp(-40, 20, fas), lerp(-80, -104, fas)], R1 = P.capeR || [lerp(80, 50, fas), lerp(-78, -104, fas)];
-      for (const [p, isR] of [[band(-132, -150, L1[0], L1[1], -112 + (1 - fas) * 20), 0], [band(132, -150, R1[0], R1[1], -112 + (1 - fas) * 20), 1]]) {
+      const L1 = P.capeL || [lerp(-40, 20, fas), lerp(-60, -82, fas)], R1 = P.capeR || [lerp(80, 50, fas), lerp(-58, -82, fas)];
+      for (const [p, isR] of [[band(-138, -120, L1[0], L1[1], -88 + (1 - fas) * 20), 0], [band(138, -120, R1[0], R1[1], -88 + (1 - fas) * 20), 1]]) {
         fillShade(ctx, p, '#9b3c3e', { tex: IMG.tex_cape ? patImg(ctx, IMG.tex_cape, .9) : null, texA: .4 });
         ctx.save(); ctx.clip(p); ctx.strokeStyle = '#e2a443'; ctx.lineWidth = 6; ctx.stroke(p); ctx.restore(); ink(ctx, p, 3);
       }
@@ -195,7 +195,7 @@ function drawWu(ctx, P) {
 }
 
 // ======================= 歸歸 (Dang Gui) ========================================
-const GUI_FACE = { x: 4, y: -182, ex: 38, rx: 8.5, ry: 11, cheek: [70, 24, 18, 11], my: 22, mw: 15, skin: '#f6e2a8' };
+const GUI_FACE = { x: 4, y: -192, ex: 38, rx: 8.5, ry: 11, cheek: [70, 24, 18, 11], my: 22, mw: 15, skin: '#f6e2a8' };
 function ribbon(pts, w0, w1) {
   const L = [], R = [], n = pts.length;
   for (let i = 0; i < n; i++) {
@@ -208,7 +208,7 @@ function bez(p0, p1, p2, p3, n = 14) { const o = []; for (let i = 0; i <= n; i++
 function guiStrands(sway, t) {
   const S = [], r = mulberry32(7), N = 17;
   for (let i = 0; i < N; i++) {
-    const u = i / (N - 1) - .5, sg = Math.sign(u) || 1, x0 = u * 190, y0 = -165 + Math.abs(u) * 50;
+    const u = i / (N - 1) - .5, sg = Math.sign(u) || 1, x0 = u * 200, y0 = -128 + Math.abs(u) * 30;
     const ex = u * 300 + (r() - .5) * 24 + sway * (10 + Math.abs(u) * 24), ey = -6 - Math.abs(u) * 26 + r() * 10;
     const wob = Math.sin((t || 0) * 1.3 + i) * 3;
     const pts = bez([x0, y0], [x0 + u * 30 + wob, -100], [ex - u * 70 - sg * 10 + wob, -50 + r() * 14], [ex, ey]);
@@ -264,11 +264,13 @@ function drawQiqi(ctx, P) {
     ctx.fillStyle = '#7a3a18'; ctx.beginPath(); ctx.ellipse(0, -290, 7, 5, 0, 0, 7); ctx.fill();
     if (!P.back) drawFace(ctx, { ...QI_FACE, x: turn * 22 }, P);
     // mustard neckerchief
+    if (!P.back) {
     const sc = new Path2D(); sc.moveTo(-78, -162); sc.quadraticCurveTo(0, -132, 78, -162); sc.lineTo(76, -130); sc.quadraticCurveTo(40, -108, 2, -64); sc.quadraticCurveTo(-36, -104, -78, -128); sc.closePath();
     fillShade(ctx, sc, '#eeb53c', { light: [-20, -140, 60] }); ink(ctx, sc, 3);
     ctx.strokeStyle = '#fff4d2'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-10, -118); ctx.lineTo(16, -108); ctx.stroke(); for (const [x, y] of [[-4, -120], [6, -112], [-6, -110]]) { ctx.fillStyle = '#fff4d2'; ctx.beginPath(); ctx.ellipse(x, y, 4, 2, .4, 0, 7); ctx.fill(); }
     const kn = P.knot || 0; const tails = new Path2D(); tails.moveTo(64, -142); tails.quadraticCurveTo(96 + kn * 6, -150, 110 + kn * 10, -128); tails.lineTo(92, -124); tails.closePath(); tails.moveTo(64, -138); tails.quadraticCurveTo(92, -118 + kn * 4, 98 + kn * 6, -96); tails.lineTo(80, -104); tails.closePath();
     fillShade(ctx, tails, '#e2a52e'); ink(ctx, tails, 2.6); const knot = new Path2D(); knot.ellipse(66, -140, 11, 9, 0, 0, 7); fillShade(ctx, knot, '#eeb53c'); ink(ctx, knot, 2.6);
+    } else { const band = new Path2D(); band.moveTo(-76, -160); band.quadraticCurveTo(0, -136, 76, -160); band.lineTo(76, -140); band.quadraticCurveTo(0, -116, -76, -140); band.closePath(); fillShade(ctx, band, '#eeb53c'); ink(ctx, band, 2.6); }
     const sw = P.armSwing || 0;
     const hL = hp(P, 'L', [-84 - sw * 10, -104]), hR = hp(P, 'R', [84 + sw * 10, -104]);
     if (P.hold && P.hold.L0) P.hold.L0(ctx, hL[0], hL[1]); if (P.hold && P.hold.R0) P.hold.R0(ctx, hR[0], hR[1]);
@@ -332,10 +334,12 @@ function drawZao(ctx, P) {
     for (const [fx, fy] of [[-48, -232], [-74, -214], [-26, -216]]) flower5(ctx, fx, fy, 14, '#fff8ea', '#f2c14e', '#b98a5a');
     if (!P.back) drawFace(ctx, { ...ZAO_FACE, x: turn * 34 }, P);
     // ochre apron
+    if (!P.back) {
     const ap = new Path2D(); ap.moveTo(-82, -104); ap.quadraticCurveTo(0, -94, 82, -104); ap.lineTo(78, -50); ap.quadraticCurveTo(0, -18, -78, -50); ap.closePath();
     fillShade(ctx, ap, '#eda93a', { light: [-20, -90, 70] }); ink(ctx, ap, 3);
     const pk = new Path2D(); pk.roundRect(-30, -82, 60, 40, 8); ctx.save(); ctx.setLineDash([5, 4]); ink(ctx, pk, 2, '#b07020'); ctx.restore(); flower5(ctx, 0, -62, 11, '#fff3d6', '#f2c14e', '#b07020');
     for (const s of [-1, 1]) { const tie = new Path2D(); tie.ellipse(s * 98, -100, 14, 9, s * .5, 0, 7); fillShade(ctx, tie, '#eda93a'); ink(ctx, tie, 2.4); }
+    } else { const bw = new Path2D(); bw.ellipse(0, -100, 26, 14, 0, 0, 7); fillShade(ctx, bw, '#eda93a'); ink(ctx, bw, 2.4); ctx.strokeStyle = '#eda93a'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(-100, -100); ctx.lineTo(100, -100); ctx.stroke(); }
     const hL = hp(P, 'L', [-122, -88]), hR = hp(P, 'R', [122, -88]);
     if (P.hold && P.hold.R0) P.hold.R0(ctx, hR[0], hR[1]);
     arm(ctx, -100, -122, hL[0], hL[1], 20, 24, red, { grip: (P.grip || {}).L }); arm(ctx, 100, -122, hR[0], hR[1], 20, 24, red, { grip: (P.grip || {}).R });
@@ -363,8 +367,9 @@ function drawShan(ctx, P) {
     ctx.strokeStyle = '#7f8f3a'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-40, -300); ctx.bezierCurveTo(-110, -300, -120, -240, -96, -190); ctx.bezierCurveTo(-80, -160, -110, -130, -96, -110); ctx.stroke();
     for (const [lx, ly, a] of [[-104, -262, -.8], [-90, -205, .6], [-58, -302, -1.6]]) { const l = new Path2D(); l.moveTo(lx, ly); l.bezierCurveTo(lx - 30, ly - 22, lx - 32, ly + 14, lx, ly + 26); l.bezierCurveTo(lx + 32, ly + 14, lx + 30, ly - 22, lx, ly); ctx.save(); ctx.translate(lx, ly); ctx.rotate(a); ctx.translate(-lx, -ly); fillShade(ctx, l, '#93a24e'); ink(ctx, l, 2.4); ctx.restore(); }
     flower5(ctx, -30, -312, 20, '#fffaf0', '#f2c14e', '#b98a5a');
-    // sage blanket front flaps
-    for (const s of [-1, 1]) {
+    // sage blanket front flaps (from behind: the blanket covers the back)
+    if (P.back) { const bb = new Path2D(); bb.moveTo(-96, -182); bb.quadraticCurveTo(0, -200, 96, -182); bb.quadraticCurveTo(140, -100, 128, -8); bb.lineTo(-128, -8); bb.quadraticCurveTo(-140, -100, -96, -182); bb.closePath(); fillShade(ctx, bb, sage, { dark: [0, -90, 150], darkC: 'rgba(80,100,40,.35)' }); ink(ctx, bb, 3); }
+    else for (const s of [-1, 1]) {
       const fl = new Path2D(); fl.moveTo(s * 96, -182); fl.quadraticCurveTo(s * 40, -170, s * 34, -150); fl.quadraticCurveTo(s * 30, -80, s * 50, -10); fl.lineTo(s * 128, -8); fl.quadraticCurveTo(s * 140, -100, s * 96, -182); fl.closePath();
       fillShade(ctx, fl, sage, { light: [s * 70, -150, 80] }); ctx.save(); ctx.clip(fl); ctx.strokeStyle = '#f1ecd6'; ctx.lineWidth = 8; ctx.stroke(fl); ctx.restore(); ink(ctx, fl, 3);
       ctx.strokeStyle = '#7f8f3a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(s * 90, -30); ctx.quadraticCurveTo(s * 100, -60, s * 92, -84); ctx.stroke();
@@ -389,10 +394,12 @@ function drawQi2(ctx, P) {
     ctx.save(); ctx.clip(face); ctx.strokeStyle = 'rgba(200,150,70,.45)'; ctx.lineWidth = 2; for (let i = 0; i < 24; i++) { const a = -Math.PI / 2 + (i - 12) * .11; ctx.beginPath(); ctx.moveTo(2, -40); ctx.lineTo(2 + Math.cos(a) * 160, -40 + Math.sin(a) * 160); ctx.stroke(); } ctx.restore();
     ink(ctx, face, 2.2, '#b8883e');
     if (!P.back) drawFace(ctx, { ...QI2_FACE, x: QI2_FACE.x + turn * 30 }, P);
+    if (!P.back) {
     const ap = new Path2D(); ap.moveTo(-86, -110); ap.quadraticCurveTo(0, -100, 86, -110); ap.lineTo(80, -44); ap.quadraticCurveTo(0, -12, -80, -44); ap.closePath();
     fillShade(ctx, ap, '#9a6236', { light: [-20, -90, 70] }); ink(ctx, ap, 3);
     const pk = new Path2D(); pk.roundRect(-26, -86, 52, 36, 7); ctx.save(); ctx.setLineDash([5, 4]); ink(ctx, pk, 2, '#e8c070'); ctx.restore(); flower5(ctx, 0, -68, 11, '#f2c14e', '#e07a3a', '#7a4a20');
     const tie = new Path2D(); tie.ellipse(-100, -106, 16, 10, -.5, 0, 7); fillShade(ctx, tie, '#9a6236'); ink(ctx, tie, 2.4);
+    } else { ctx.strokeStyle = '#9a6236'; ctx.lineWidth = 8; ctx.beginPath(); ctx.moveTo(-96, -106); ctx.lineTo(96, -106); ctx.stroke(); const bw = new Path2D(); bw.ellipse(0, -106, 24, 13, 0, 0, 7); fillShade(ctx, bw, '#9a6236'); ink(ctx, bw, 2.4); }
     const hL = hp(P, 'L', [-108, -94]), hR = hp(P, 'R', [108, -94]);
     if (P.hold && P.hold.R0) P.hold.R0(ctx, hR[0], hR[1]); if (P.hold && P.hold.L0) P.hold.L0(ctx, hL[0], hL[1]);
     arm(ctx, -88, -126, hL[0], hL[1], 17, 21, cr, { grip: (P.grip || {}).L }); arm(ctx, 88, -126, hR[0], hR[1], 17, 21, cr, { grip: (P.grip || {}).R });

@@ -3,7 +3,7 @@
 // ambience beds, sound effects on contact frames, and the three voice lines.
 // ---------------------------------------------------------------------------
 const AUDIO_SR = 48000;
-const MASTER_GAIN = 1.0;
+const MASTER_GAIN = 2.4;
 let _AUDIO = null;
 function synthAudio() {
   if (_AUDIO) return _AUDIO;
@@ -34,6 +34,8 @@ function synthAudio() {
       return tone(d, t => { const f = 70 + 40 * Math.sin(t * 2.1) + 25 * vnoise1(t * 6); ph += 2 * Math.PI * f / SR; const pulse = Math.pow(Math.max(0, Math.sin(ph)), 12); const e = Math.sin(Math.PI * clamp(t / d)) ** .6; return (bp(pulse * 3 + white() * .05) + bp2(pulse * 2) * .6) * e * .7; }); },
     woodstep(o) { const lp = bq('lp', 900), bp = bq('bp', 320, 3); return tone(.22, t => (lp(white()) * Math.exp(-t / .012) * .7 + bp(white()) * Math.exp(-t / .05) * 1.4 + Math.sin(2 * Math.PI * 110 * t) * Math.exp(-t / .04) * .35)); },
     step(o) { return FX.woodstep(o).map(v => v * .8); },
+    plank(o) { const bp = bq('bp', 260, 2.5), bp2 = bq('bp', 900, 3); return tone(.3, t => bp(white()) * Math.exp(-t / .06) * 1.6 + bp2(white()) * Math.exp(-t / .02) * .5 + Math.sin(2 * Math.PI * 150 * t) * Math.exp(-t / .07) * .4); },
+    grass(o) { const bp = bq('bp', 2500, .7), lp = bq('lp', 400); return tone(.18, t => bp(white()) * Math.exp(-t / .035) * .7 + lp(white()) * Math.exp(-t / .03) * .6); },
     patter(o) { const d = o.d || 2, a = new Float32Array(len(d + .3)); for (let k = 0; k * .16 < d; k++) { const s = FX.woodstep({}), off = len(k * .16); for (let i = 0; i < s.length && off + i < a.length; i++) a[off + i] += s[i] * (k % 2 ? .75 : 1); } return a; },
     birds(o) { const d = o.d || 5, a = new Float32Array(len(d)), r = mulberry32(5); for (let k = 0; k < 9; k++) { const t0 = r() * (d - .5), f0 = 2600 + r() * 1500, n = len(.09 + r() * .07); let ph = 0; for (let i = 0; i < n; i++) { const t = i / SR, f = f0 * (1 + .35 * Math.sin(t * 60)); ph += 2 * Math.PI * f / SR; const k2 = len(t0) + i; if (k2 < a.length) a[k2] += Math.sin(ph) * Math.sin(Math.PI * i / n) * .15; } } return a; },
     paper(o) { const bp = bq('bp', 3500, .8); return tone(.3, t => bp(white()) * Math.exp(-t / .07) * Math.min(1, t / .01) * .9); },
@@ -61,6 +63,8 @@ function synthAudio() {
     chime(o) { const f0 = 880, P = [[1, 1, 3.2], [2.0, .4, 1.6], [2.76, .3, 1.0], [5.4, .12, .4]]; return tone(4, t => P.reduce((v, [r, g, d]) => v + Math.sin(2 * Math.PI * f0 * r * t) * g * Math.exp(-t / d), 0) * Math.min(1, t / .004) * .3); },
   };
   for (const c of CUES) if (c.kind === 'act' && c.sfx) for (const s of c.sfx) put(sL, sR, c.t + (s.at || 0), FX[s.n](s), s.g, s.pan);
+  // footfalls from the walk tracks: one per whole step (both feet planted)
+  for (const [id, w] of Object.entries(WALKS)) { let prev = walkN(id, w.keys[0][0]); for (let t = w.keys[0][0]; t <= w.keys[w.keys.length - 1][0] + .01; t += .005) { const n = walkN(id, t); if (Math.floor(n + 1e-6) > Math.floor(prev + 1e-6)) put(sL, sR, t, FX[w.snd]({}), w.g * (.85 + .3 * rng()), w.pan); prev = n; } }
   // voices (mono, centred, gently warmed with a touch of room)
   for (const c of CUES.filter(c => c.kind === 'voice')) {
     const E = ENV[c.id], ratio = E.sr / SR, n = Math.floor(E.pcm.length / ratio), a = new Float32Array(n);
