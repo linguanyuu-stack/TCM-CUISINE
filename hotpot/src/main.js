@@ -1,21 +1,22 @@
 // ---------------------------------------------------------------------------
 // Compositor + player API
 // ---------------------------------------------------------------------------
-function render(ctx, t) {
-  initTextures(); t = clamp(t, 0, DUR - 1e-4);
+function renderScene(ctx, to) { const s = shotAt(to); (SCENES[s.scene] || (() => {}))(ctx, to, s); }
+// render film time tn: map through the edit to scene time, dissolve at cuts that ask for it
+function render(ctx, tn) {
+  initTextures(); tn = clamp(tn, 0, DUR - 1e-4);
+  const e = edlAt(tn), to = oldT(tn), i = EDL.indexOf(e);
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-  const s = shotAt(t); (SCENES[s.scene] || (() => {}))(ctx, t, s);
-  // dissolves between shots where the cue list asks for one
-  const prev = SHOTS[SHOTS.indexOf(s) - 1];
-  if (prev && s.xf && t - s.t < s.xf) {
-    const b = getBuf('xf'), g = b.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0);
-    (SCENES[prev.scene])(g, s.t - 1e-3, prev);
-    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1 - ease((t - s.t) / s.xf); ctx.drawImage(b, 0, 0); ctx.globalAlpha = 1;
+  renderScene(ctx, to);
+  if (i > 0 && e.xf && tn - e.s < e.xf) {
+    const p = EDL[i - 1], b = getBuf('xf'), g = b.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0);
+    renderScene(g, p.b - 1e-3);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1 - ease((tn - e.s) / e.xf); ctx.drawImage(b, 0, 0); ctx.globalAlpha = 1;
   }
-  drawEndCard(ctx, t);
+  drawEndCard(ctx, to);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = .22; ctx.drawImage(TEX.paper, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
-  const fin = 1 - smooth(0, .8, t); if (fin > 0) { ctx.fillStyle = `rgba(247,236,216,${fin})`; ctx.fillRect(0, 0, W, H); }
+  const fin = 1 - smooth(0, .8, tn); if (fin > 0) { ctx.fillStyle = `rgba(247,236,216,${fin})`; ctx.fillRect(0, 0, W, H); }
   ctx.restore();
 }
 const BUFS = {}; function getBuf(k) { if (!BUFS[k]) BUFS[k] = mkCanvas(W, H); return BUFS[k]; }

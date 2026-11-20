@@ -15,7 +15,7 @@ def b64wav(p):
     w = wave.open(p); assert w.getsampwidth() == 2 and w.getnchannels() == 1
     return {'sr': w.getframerate(), 'pcm': base64.b64encode(w.readframes(w.getnframes())).decode()}
 def main():
-    a = sys.argv[1:]; rng = [0, 150]
+    a = sys.argv[1:]; rng = [0, 90]
     if '--range' in a: i = a.index('--range'); rng = [float(a[i + 1]), float(a[i + 2])]; del a[i:i + 3]
     out = a[0] if a else os.path.join(ROOT, 'dist', 'hotpot.html')
     code = '\n'.join(open(os.path.join(ROOT, d, f), encoding='utf-8').read() for d, f in ORDER if os.path.exists(os.path.join(ROOT, d, f)))

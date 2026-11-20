@@ -50,10 +50,10 @@ function picnicCast(t, mode) {
   for (const [w, id, nTot, y0] of arrivals) {
     const [sx, sy, k] = SEAT[w]; const P = { x: 0, y: 0, k, cape: 'on', tt: t };
     if (mode === 'arrive' && t < WALKS[id].keys[WALKS[id].keys.length - 1][0] + .05) {
-      const n = walkN(id, t), Ls = 2 * HIP[w] * k * (w === 'qi' ? 1 : 1); P.x = sx - nTot * Ls; walkPose(w, P, n, 1, walkMoving(id, t));
+      const n = walkN(id, t), Ls = 2 * HIP[w] * k, dir = w === 'qi' ? -1 : 1; P.x = sx - dir * nTot * Ls; walkPose(w, P, n, dir, walkMoving(id, t));
       P.y = lerp(y0, sy, n / nTot);
     } else { P.x = sx; P.y = sy; }
-    P.turn = .25; P.eye = face(1, .5, -.3); P.mouth = { shape: 'smile' }; idle(P, t, sx);
+    P.turn = w === 'qi' ? -.25 : .25; P.eye = face(1, w === 'qi' ? -.5 : .5, -.3); P.mouth = { shape: 'smile' }; idle(P, t, sx);
     if (w === 'qi') P.hold = { L: (g, hx, hy) => drawCard(g, hx, hy + 20, 56, .3) };
     L.push([w, P]); by[w] = P;
   }
@@ -113,8 +113,8 @@ function hotpotState(t) {
   // everyone eats & laughs
   const la = prog('h.laugh', t);
   for (const [w, P] of L) {
-    if (w !== 'di' && eat > 0 && la <= 0) { const ph = Math.sin((t - 98.6) * 2.6 + P.x * .01); if (w !== 'wu' && w !== 'qi2' && w !== 'gui') P.mouth = { shape: ph > .3 ? 'o' : 'smile', open: Math.max(0, ph) * .5 }; }
-    if (la > 0 && la < 1 && w !== 'di') { const e = hump(la); P.eye = face(1, 0, 0, 'happy'); P.mouth = { shape: 'open', open: .5 + .4 * Math.abs(Math.sin((t - 103.4) * 9 + P.x)) }; P.lift = (P.lift || 0) + Math.abs(Math.sin((t - 103.4) * 6 + P.x)) * 8 * e; P.blush = .5; }
+    if (w !== 'di' && eat > 0 && la <= 0) { const ph = Math.sin((t - ACT['h.eat'].t) * 2.6 + P.x * .01); if (w !== 'wu' && w !== 'qi2' && w !== 'gui') P.mouth = { shape: ph > .3 ? 'o' : 'smile', open: Math.max(0, ph) * .5 }; }
+    if (la > 0 && la < 1 && w !== 'di') { const e = hump(la); P.eye = face(1, 0, 0, 'happy'); P.mouth = { shape: 'open', open: .5 + .4 * Math.abs(Math.sin((t - ACT['h.laugh'].t) * 9 + P.x)) }; P.lift = (P.lift || 0) + Math.abs(Math.sin((t - ACT['h.laugh'].t) * 6 + P.x)) * 8 * e; P.blush = .5; }
     if (la > 0 && la < 1 && w === 'di') { P.sprite = 'di_yawn'; }
   }
   return { L, by, bowl, fill, lad, pouring, Q };
@@ -152,7 +152,7 @@ SCENES.cups = (ctx, t) => {
   const fade = ctx.createLinearGradient(0, 1300, 0, 1460); fade.addColorStop(0, 'rgba(120,140,80,.5)'); fade.addColorStop(1, 'rgba(120,140,80,0)'); ctx.fillStyle = fade; ctx.fillRect(0, 1300, W, 160);
   const face_ = prog('u.face', t), cl = prog('u.clink', t), sp = prog('u.sip', t), ml = prog('u.ma', t), dl = prog('u.dou', t);
   const M = { x: 320, y: 1640, k: 2.0, tt: t, turn: .45 }, D = { x: 790, y: 1660, k: 2.25, turn: -.45 };
-  const lean = ease(clamp(face_ * 1.4)) * (1 - ease(clamp((t - 113.6) / .4)));
+  const lean = ease(clamp(face_ * 1.4)) * (1 - ease(clamp((t - ACT['u.clink'].t - 1.0) / .4)));
   M.lean = lean * .08; D.lean = -lean * .08;
   // playful face-off: narrowed eyes, side glance, tiny smirk
   M.eye = face(lerp(1, .5, lean), .9, 0); D.eye = face(lerp(1, .5, lean), -.9, 0);
@@ -167,10 +167,10 @@ SCENES.cups = (ctx, t) => {
   D.hands = { L: toLocal(D, dcup[0] - 40, dcup[1] + 30), R: toLocal(D, dcup[0] + 40, dcup[1] + 30) };
   if (sip > .3) { M.eye = face(0, 0, 0, 'closed'); D.eye = face(0, 0, 0, 'closed'); M.mouth = { shape: 'o', open: .2 }; D.mouth = { shape: 'o', open: .2 }; }
   // 麻麻 laughs first, 豆豆 follows
-  if (ml > 0 && ml < 1) { M.eye = face(1, 0, 0, 'happy'); M.mouth = { shape: 'open', open: .55 + .4 * Math.abs(Math.sin((t - 116.4) * 10)) }; M.lift = Math.abs(Math.sin((t - 116.4) * 7)) * 10 * hump(ml); M.capFlop = Math.sin((t - 116.4) * 7) * hump(ml); M.blush = .6; M.hands.L = [-60, -150]; }
-  if (dl > 0 && dl < 1) { D.eye = face(1, 0, 0, 'happy'); D.mouth = { shape: 'open', open: .5 + .4 * Math.abs(Math.sin((t - 117.2) * 11)) }; D.lift = Math.abs(Math.sin((t - 117.2) * 8)) * 12 * hump(dl); D.blush = .6; }
-  if (t > 119.8) { M.eye = face(1, .6, .1); D.eye = face(1, -.6, .1); M.mouth = { shape: 'smile', open: .3 }; D.mouth = { shape: 'smile', open: .3 }; }
-  M.cap = Math.sin(t * 1.5) * .02 + spring(t, 113.22, .05); idle(M, t, 1); idle(D, t, 2);
+  if (ml > 0 && ml < 1) { M.eye = face(1, 0, 0, 'happy'); M.mouth = { shape: 'open', open: .55 + .4 * Math.abs(Math.sin((t - ACT['u.ma'].t) * 10)) }; M.lift = Math.abs(Math.sin((t - ACT['u.ma'].t) * 7)) * 10 * hump(ml); M.capFlop = Math.sin((t - ACT['u.ma'].t) * 7) * hump(ml); M.blush = .6; M.hands.L = [-60, -150]; }
+  if (dl > 0 && dl < 1) { D.eye = face(1, 0, 0, 'happy'); D.mouth = { shape: 'open', open: .5 + .4 * Math.abs(Math.sin((t - ACT['u.dou'].t) * 11)) }; D.lift = Math.abs(Math.sin((t - ACT['u.dou'].t) * 8)) * 12 * hump(dl); D.blush = .6; }
+  if (t > ACT['u.dou'].t + 2.6) { M.eye = face(1, .6, .1); D.eye = face(1, -.6, .1); M.mouth = { shape: 'smile', open: .3 }; D.mouth = { shape: 'smile', open: .3 }; }
+  M.cap = Math.sin(t * 1.5) * .02 + spring(t, ACT['u.clink'].t + .56, .05); idle(M, t, 1); idle(D, t, 2);
   D.blanket = 1;
   RIG.ma(ctx, M); RIG.dou(ctx, D);
   for (const [P, side, col, r] of [[M, 'R', '#e5bf84', 24 * 2.0], [D, 'L', '#2b1914', 14 * 2.25], [D, 'R', '#2b1914', 14 * 2.25]]) { const q = toWorld(P, P.hands[side][0], P.hands[side][1]); const hp2 = new Path2D(); hp2.ellipse(q[0], q[1], r, r * .92, 0, 0, 7); fillShade(ctx, hp2, col, { light: [q[0] - r * .3, q[1] - r * .4, r] }); ink(ctx, hp2, 3.4, col === '#2b1914' ? '#120804' : INK); }
@@ -194,7 +194,7 @@ SCENES.dusk = (ctx, t) => {
   const grp = ease(prog('k.groups', t)); const r = mulberry32(131);
   for (let i = 0; i < 9; i++) { const x = -300 + i * 210 + r() * 60, y = 905 + r() * 20, a = clamp(grp * 9 - i); if (a <= 0) continue; ctx.save(); ctx.globalAlpha = a * .85; for (let j = 0; j < 3 + (i % 3); j++) { ctx.fillStyle = ['#5a4a5a', '#6a5040', '#4a5060'][j % 3]; ctx.beginPath(); ctx.ellipse(x + j * 26, y - 22, 13, 24, 0, 0, 7); ctx.fill(); } ctx.restore(); drawLanternOn(ctx, x + 40, y + 6, .35, a * smooth(.4, .9, d), t); }
   const { L } = picnicCast(t, 'dusk');
-  for (const [w, P] of L) { const ph = Math.sin(t * .8 + P.x * .02); if (w !== 'di' && ph > .7) { P.eye = face(1, 0, 0, 'happy'); P.mouth = { shape: 'open', open: .4 }; } else if (w !== 'di') { P.eye = P.eye || face(); P.eye.lx = Math.sin(t * .3 + P.x) * .6; } if (w === 'qi' && t > 129) { P.hands = { L: [-84, -104], R: [100, -200] }; P.eye = face(1, .7, -.6); } }
+  for (const [w, P] of L) { const ph = Math.sin(t * .8 + P.x * .02); if (w !== 'di' && ph > .7) { P.eye = face(1, 0, 0, 'happy'); P.mouth = { shape: 'open', open: .4 }; } else if (w !== 'di') { P.eye = P.eye || face(); P.eye.lx = Math.sin(t * .3 + P.x) * .6; } if (w === 'qi' && t > 123.5) { P.hands = { L: [-84, -104], R: [100, -200] }; P.eye = face(1, .7, -.6); } }
   const back = L.filter(([w, P]) => P.y < POT.y), front = L.filter(([w, P]) => P.y >= POT.y);
   drawCast(ctx, back); drawPicnicProps(ctx, t); drawCast(ctx, front);
   grade(ctx, k);

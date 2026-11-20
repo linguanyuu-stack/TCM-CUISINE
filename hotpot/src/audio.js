@@ -62,20 +62,22 @@ function synthAudio() {
       for (let k = 0; k < 40; k++) { const o0 = len(.25 + r() * 1.6), g = .05 + r() * .1; for (let i = 0; i < len(.01) && o0 + i < a.length; i++) a[o0 + i] += (r() * 2 - 1) * g * Math.exp(-i / 40); } return a; },
     chime(o) { const f0 = 880, P = [[1, 1, 3.2], [2.0, .4, 1.6], [2.76, .3, 1.0], [5.4, .12, .4]]; return tone(4, t => P.reduce((v, [r, g, d]) => v + Math.sin(2 * Math.PI * f0 * r * t) * g * Math.exp(-t / d), 0) * Math.min(1, t / .004) * .3); },
   };
-  for (const c of CUES) if (c.kind === 'act' && c.sfx) for (const s of c.sfx) put(sL, sR, c.t + (s.at || 0), FX[s.n](s), s.g, s.pan);
+  // every cue lives in scene time; place it in film time through the edit
+  const at = to => newT(to);
+  for (const c of CUES) if (c.kind === 'act' && c.sfx) for (const s of c.sfx) { const tn = at(c.t + (s.at || 0)); if (tn != null) put(sL, sR, tn, FX[s.n](s), s.g, s.pan); }
   // footfalls from the walk tracks: one per whole step (both feet planted)
-  for (const [id, w] of Object.entries(WALKS)) { let prev = walkN(id, w.keys[0][0]); for (let t = w.keys[0][0]; t <= w.keys[w.keys.length - 1][0] + .01; t += .005) { const n = walkN(id, t); if (Math.floor(n + 1e-6) > Math.floor(prev + 1e-6)) put(sL, sR, t, FX[w.snd]({}), w.g * (.85 + .3 * rng()), w.pan); prev = n; } }
+  for (const [id, w] of Object.entries(WALKS)) { let prev = walkN(id, w.keys[0][0]); for (let t = w.keys[0][0]; t <= w.keys[w.keys.length - 1][0] + .01; t += .005) { const n = walkN(id, t); if (Math.floor(n + 1e-6) > Math.floor(prev + 1e-6)) { const tn = at(t); if (tn != null) put(sL, sR, tn, FX[w.snd]({}), w.g * (.85 + .3 * rng()), w.pan); } prev = n; } }
   // voices (mono, centred, gently warmed with a touch of room)
   for (const c of CUES.filter(c => c.kind === 'voice')) {
     const E = ENV[c.id], ratio = E.sr / SR, n = Math.floor(E.pcm.length / ratio), a = new Float32Array(n);
     for (let i = 0; i < n; i++) { const p = i * ratio, j = Math.floor(p), u = p - j; a[i] = lerp(E.pcm[j] || 0, E.pcm[j + 1] || 0, u); }
-    put(vL, vR, c.t, a, (c.g || 1) * .9, 0);
+    const tn = at(c.t); if (tn != null) put(vL, vR, tn, a, (c.g || 1) * .9, 0);
   }
   // ambience beds from 'amb' keys
   const AMB = CUES.filter(c => c.kind === 'amb');
   const level0 = (k, t) => { for (let i = 0; i < AMB.length - 1; i++) { const a = AMB[i], b = AMB[i + 1]; if (t >= a.t && t <= b.t) return lerp(a[k], b[k], (t - a.t) / Math.max(1e-6, b.t - a.t)); } return AMB[AMB.length - 1][k]; };
-  const LV = {}; for (const k of ['room', 'outdoor', 'simmer', 'city', 'fw']) { LV[k] = new Float32Array(DUR * 100 + 2); for (let i = 0; i < LV[k].length; i++) LV[k][i] = level0(k, i / 100); }
-  const level = (k, t) => LV[k][clamp(Math.floor(t * 100), 0, DUR * 100)];
+  const LV = {}; for (const k of ['room', 'outdoor', 'simmer', 'city', 'fw']) { LV[k] = new Float32Array(DUR * 100 + 2); for (let i = 0; i < LV[k].length; i++) LV[k][i] = level0(k, oldT(i / 100)); }
+  const level = (k, t) => LV[k][clamp(Math.floor(t * 100), 0, DUR * 100)];  // t = film time
   {
     const pl = pinkGen(mulberry32(7)), pr = pinkGen(mulberry32(8)), roomL = bq('lp', 300), roomR = bq('lp', 320), outL = bq('bp', 2200, .5), outR = bq('bp', 2300, .5), cityL = bq('lp', 500), cityR = bq('lp', 520), simL = bq('lp', 380);
     for (let i = 0; i < N; i++) {
@@ -89,7 +91,7 @@ function synthAudio() {
   }
   // music: pads + Karplus–Strong plucks
   const TB = 2048, tri = new Float32Array(TB); for (let i = 0; i < TB; i++) { const x = i / TB * 2 * Math.PI; tri[i] = Math.sin(x) + Math.sin(3 * x) / 9 + Math.sin(2 * x) * .18; }
-  const chords = CUES.filter(c => c.kind === 'chord');
+  const chords = MUSIC.chords.map(([t, n]) => ({ t, notes: n.split(' ') }));
   chords.forEach((c, ci) => {
     const t0 = c.t, t1 = (chords[ci + 1] ? chords[ci + 1].t : DUR) + 1.6, n = len(t1 - t0), last = !chords[ci + 1];
     c.notes.forEach((nm, ni) => { const f = noteFreq(nm); for (const [side, det] of [[-1, .9985], [1, 1.0015]]) {
@@ -97,7 +99,7 @@ function synthAudio() {
       for (let i = 0; i < n; i++) { const t = i / SR, e = Math.min(1, t / 1.5) * (t > (t1 - t0 - rel) ? Math.max(0, (t1 - t0 - t) / rel) : 1); ph += inc; if (ph >= TB) ph -= TB; a[i] = lp(tri[ph | 0]) * e; }
       put(mL, mR, t0, a, .016 * (ni === 0 ? 1.2 : 1), side * .45); } });
   });
-  CUES.filter(c => c.kind === 'note').forEach((c, k) => {
+  MUSIC.notes.map(([t, n]) => ({ t, n, v: .42 })).forEach((c, k) => {
     const f = noteFreq(c.n), n = len(3), a = new Float32Array(n), D = Math.max(2, Math.round(SR / f)), buf = new Float32Array(D), r = mulberry32(300 + k);
     let prev = 0; for (let i = 0; i < D; i++) { prev = prev * .5 + (r() * 2 - 1) * .5; buf[i] = prev; }
     let idx = 0, ph = 0; const lp = bq('lp', 3600);
@@ -105,7 +107,7 @@ function synthAudio() {
     put(mL, mR, c.t, a, c.v * .14, (k % 3 - 1) * .3);
   });
   // ducking under voices
-  for (const c of CUES.filter(c => c.kind === 'voice')) { const i0 = len(c.t - .2), i1 = len(c.t + ENV[c.id].dur + .3); for (let i = Math.max(0, i0); i < Math.min(N, i1); i++) { const u = Math.min(1, (i - i0) / len(.2), (i1 - i) / len(.3)); const g = 1 - .45 * u; mL[i] *= g; mR[i] *= g; aL[i] *= 1 - .3 * u; aR[i] *= 1 - .3 * u; } }
+  for (const c of CUES.filter(c => c.kind === 'voice')) { const tv = newT(c.t); if (tv == null) continue; const i0 = len(tv - .2), i1 = len(tv + ENV[c.id].dur + .3); for (let i = Math.max(0, i0); i < Math.min(N, i1); i++) { const u = Math.min(1, (i - i0) / len(.2), (i1 - i) / len(.3)); const g = 1 - .45 * u; mL[i] *= g; mR[i] *= g; aL[i] *= 1 - .3 * u; aR[i] *= 1 - .3 * u; } }
   // reverb
   const wetL = new Float32Array(N), wetR = new Float32Array(N);
   { const sc = SR / 44100, combs = [1116, 1188, 1277, 1356, 1422, 1491].map(x => Math.round(x * sc)), aps = [556, 441, 341].map(x => Math.round(x * sc));

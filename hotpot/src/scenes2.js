@@ -77,47 +77,60 @@ function buildBedroom() {
     const fl = new Path2D(); fl.rect(-50, 1760, W + 100, 200); wc(g, fl, '#a8744a', { grain: .3 });
   });
 }
-function quiltFront(ctx, topY, t, slip = 0) {
-  const p = new Path2D(); p.moveTo(150, topY + 30); p.bezierCurveTo(350, topY - 20 + slip * 40, 700, topY - 10, 930, topY + 40); p.lineTo(990, 1780); p.lineTo(90, 1780); p.closePath();
+// the quilt is cloth draped over 烏烏: its top edge passes through points on his body
+function quiltCloth(ctx, top) {
+  const pts = [[60, 1470], ...top, [1020, 1470]];
+  const p = new Path2D(); p.moveTo(...pts[0]);
+  for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i]; p.bezierCurveTo(a[0] + (b[0] - a[0]) * .5, a[1], a[0] + (b[0] - a[0]) * .5, b[1], b[0], b[1]); }
+  p.lineTo(1040, 1790); p.lineTo(40, 1790); p.closePath();
   ctx.save(); ctx.clip(p); const tiles = quiltTiles2();
-  for (let i = 0; i < 6; i++) for (let j = 0; j < 4; j++) { const x = 90 + i * 150, y = 1060 + j * 180; const pt = ctx.createPattern(tiles[['red', 'cream', 'pink', 'butter', 'red', 'cream'][(i + j) % 6]], 'repeat'); pt.setTransform(new DOMMatrix().translateSelf(x, y).scaleSelf(1.56, 1.56)); ctx.fillStyle = pt; ctx.fillRect(x, y, 150, 180); ctx.strokeStyle = 'rgba(255,248,236,.8)'; ctx.setLineDash([8, 6]); ctx.lineWidth = 2; ctx.strokeRect(x + 8, y + 8, 134, 164); ctx.setLineDash([]); }
-  ctx.globalCompositeOperation = 'multiply'; const sh = ctx.createLinearGradient(0, topY, 0, topY + 120); sh.addColorStop(0, 'rgba(140,90,60,.35)'); sh.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = sh; ctx.fillRect(0, topY - 40, W, 200);
+  for (let i = 0; i < 7; i++) for (let j = 0; j < 5; j++) { const x = 40 + i * 145, y = 1000 + j * 175; const pt = ctx.createPattern(tiles[['red', 'cream', 'pink', 'butter', 'red', 'cream', 'pink'][(i + j) % 7]], 'repeat'); pt.setTransform(new DOMMatrix().translateSelf(x, y).scaleSelf(1.51, 1.82)); ctx.fillStyle = pt; ctx.fillRect(x, y, 145, 175); ctx.strokeStyle = 'rgba(255,248,236,.8)'; ctx.setLineDash([8, 6]); ctx.lineWidth = 2; ctx.strokeRect(x + 8, y + 8, 129, 159); ctx.setLineDash([]); }
+  // soft folds that follow the edge, and shading under the hem
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.strokeStyle = 'rgba(150,90,60,.35)'; ctx.lineWidth = 16;
+  for (const k of [1, 2, 3]) { const a = pts[k], b = pts[k + 1] || pts[k]; ctx.beginPath(); ctx.moveTo(a[0], a[1] + 30); ctx.quadraticCurveTo((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 + 160, (a[0] + b[0]) / 2 + 20, 1700); ctx.stroke(); }
+  const sh = ctx.createLinearGradient(0, 1300, 0, 1500); sh.addColorStop(0, 'rgba(140,90,60,.25)'); sh.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = sh; ctx.fillRect(0, 1200, W, 400);
   ctx.globalAlpha = .2; ctx.fillStyle = pat(ctx, TEX.grain, 1); ctx.fill(p); ctx.restore();
   ink(ctx, p, 3.2);
-  ctx.strokeStyle = 'rgba(120,70,40,.35)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(300, topY + 60); ctx.quadraticCurveTo(360, topY + 200, 320, 1500); ctx.moveTo(760, topY + 60); ctx.quadraticCurveTo(700, topY + 220, 760, 1500); ctx.stroke();
 }
 function wuInBed(t) {
-  // breathing synced to the snore cues (2.8 s cycle)
   let breath = 0; for (let i = 0; i < 4; i++) { const c = ACT['snore' + i], d = t - c.t; if (d >= 0 && d < 2.8) breath = d < 1.2 ? Math.sin(Math.PI / 2 * d / 1.2) : Math.cos(Math.PI / 2 * clamp((d - 1.35) / 1.2)); }
-  if (t > 11.2) breath = .5 + .5 * Math.sin(t * 2.2);
-  const jolt = easeOutBack(prog('jolt', t)), up = ease(prog('getup', t));
-  const P = { x: 540 + up * 380, y: 1400 + 30 * (1 - jolt) - up * 60, k: 1.15, cape: 'off' };
-  P.lean = lerp(-.32, .02, jolt) + up * .2; P.lift = jolt * 40 - up * 40; P.sq = breath * -.03 * (1 - jolt) + .012 * Math.sin(t * 2.2) * jolt;
-  const awake = jolt > 0;
-  P.eye = awake ? { open: 1 - hump(prog('blink02', t)), style: t < 15.0 ? 'wide' : 'n', wide: 1 - smooth(14, 15, t), lx: track([[13.6, [0, -.3]], [15.6, [0, -.3]], [16.0, [.85, 0]], [17.4, [.85, 0]], [17.7, [.9, .3]]], t)[0], ly: track([[13.6, [0, -.3]], [15.6, [0, -.3]], [16.0, [.85, 0]], [17.4, [.85, 0]], [17.7, [.9, .3]]], t)[1] } : { style: 'closed' };
+  if (t > 12.4) breath = .5 + .5 * Math.sin(t * 2.2);
+  const antic = t > 13.42 && t < 13.6 ? hump((t - 13.42) / .18) : 0;           // anticipation squash
+  const jolt = easeOutBack(prog('jolt', t)), up = prog('getup', t);
+  const hop = clamp((up - .2) / .8), hx = ease(hop), hy = hump(hop);
+  const P = { x: 540 + hx * 470, y: 1400 + 30 * (1 - jolt) + hx * 90, k: 1.15, cape: 'off' };
+  P.lean = lerp(-.32, .02, jolt) + hy * .18; P.lift = jolt * 40 + hy * 150 - hx * 40; P.sq = breath * -.03 * (1 - jolt) + antic * .08 + .012 * Math.sin(t * 2.2) * jolt - hump(clamp((up - .05) / .2)) * -.07;
+  const awake = jolt > 0 || antic > 0;
+  const look = track([[13.6, [0, -.3]], [15.6, [0, -.3]], [16.0, [.85, 0]], [17.4, [.85, 0]], [17.7, [.9, .3]]], t);
+  P.eye = awake ? { open: 1 - hump(prog('blink02', t)), style: t < 15.0 ? 'wide' : 'n', wide: 1 - smooth(14, 15, t), lx: look[0], ly: look[1] } : { style: 'closed' };
   P.mouth = awake ? (t < 15 ? { shape: 'o', open: lerp(1, .5, smooth(14, 15, t)) } : { shape: 'flat' }) : { shape: 'snore', open: breath * .8 + .1 };
+  if (up > 0) { P.mouth = { shape: 'o', open: .5 }; P.eye.style = 'wide'; P.eye.wide = .6; }
   P.blush = awake ? 0 : .3;
-  P.leaf = spring(t, 13.93, .55, 10, 3.5) + spring(t, 16.45, .2, 10, 4) + (awake ? 0 : breath * .05);
-  P.hands = awake ? { L: [-150, lerp(-140, -90, jolt)], R: [150, lerp(-140, -90, jolt)] } : { L: [-118, -128 + breath * 6], R: [118, -128 + breath * 6] };
+  P.leaf = spring(t, 13.93, .55, 10, 3.5) + spring(t, 16.45, .2, 10, 4) + spring(t, ACT.getup.t + .3, -.3) + (awake ? 0 : breath * .05);
+  // the quilt: lies over his chest, slides to his lap a beat after he sits up, then is thrown off
+  const slip = easeOutBack(prog('quiltslip', t)), yq = lerp(-118, -42, slip);
+  const release = ease(clamp((up - .05) / .35));
+  const onBody = [toWorld(P, -162, yq + 14), toWorld(P, -70, yq - 10), toWorld(P, 70, yq - 10), toWorld(P, 162, yq + 14)];
+  const flat = [[330, 1452], [480, 1442], [620, 1444], [760, 1456]];
+  const top = onBody.map((q, i) => [lerp(q[0], flat[i][0], release), lerp(q[1], flat[i][1], release)]);
+  P.quiltTop = top;
+  // hands: resting on the quilt edge asleep; pushing on it as he sits up; free when he hops out
+  if (!awake) P.hands = { L: [-120, yq - 6 + breath * 4], R: [120, yq - 6 + breath * 4] };
+  else if (up <= 0) P.hands = { L: [-150, lerp(yq - 6, -64, jolt)], R: [150, lerp(yq - 6, -64, jolt)] };
+  else P.hands = { L: [-150, -130], R: [160, -150] };
   P.breath = breath; return P;
 }
 function renderBed(ctx, t, close) {
-  if (!close) {
-    const c = ease(prog('cal.push', t)), back = 0;
-    setCam(ctx, lerp(1.3, 1.8, c), lerp(540, 790, c), lerp(1175, 560, c));
-  } else {
-    const shake = spring(t, 13.55, 6, 30, 8);
-    setCam(ctx, 1.5, 560 + shake, 1260);
-  }
+  if (!close) { const c = ease(prog('cal.push', t)); setCam(ctx, lerp(1.3, 1.8, c), lerp(540, 790, c), lerp(1175, 560, c)); }
+  else { const shake = spring(t, 13.55, 6, 30, 8); setCam(ctx, 1.5, 560 + shake, 1260); }
   ctx.drawImage(buildBedroom(), 0, 0);
-  // the calendar circle gleams when we arrive on it
   if (!close) { const gl = hump(clamp((t - 9.6) / 2)); if (gl > 0) drawSparkle(ctx, 880, 470, 1.2, gl, '#f2b33a', .3); }
   drawLanternOn(ctx, 110, 1210, .9, 1, t);
-  const P = wuInBed(t);
+  const P = wuInBed(t), M = ctx.getTransform();
+  P.layer = g => { g.save(); g.setTransform(M); quiltCloth(g, P.quiltTop); g.restore(); };
   RIG.wu(ctx, P);
-  const slip = ease(prog('quiltslip', t)), up = ease(prog('getup', t));
-  quiltFront(ctx, 1385 + (P.breath || 0) * -10 + slip * 120 + up * 120, t, slip);
-  if (!(prog('jolt', t) > 0)) { for (const h of ['L', 'R']) { const q = toWorld(P, P.hands[h][0], P.hands[h][1]); const hp2 = new Path2D(); hp2.ellipse(q[0], q[1], 28, 24, 0, 0, 7); fillShade(ctx, hp2, '#7c4f30', { tex: patImg(ctx, IMG.wu_tex, 1) }); ink(ctx, hp2, 3.4); } zzz(ctx, P.x + 140, P.y - 330, 1.3, t); }
+  if (!(prog('jolt', t) > 0) && t < 13.4) zzz(ctx, P.x + 140, P.y - 330, 1.3, t);
   if (close) { drawBellRing(ctx, 920, 1000, hump(prog('bell', t)), t); drawBellRing(ctx, 920, 1000, hump(prog('bell2', t)) * .8, t); }
   ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
@@ -139,62 +152,80 @@ function buildHall() {
     for (let i = 0; i < 3; i++) { const j = new Path2D(); j.roundRect(790 + i * 90, 470, 64, 90, 14); wc(g, j, ['#e9e2d0', '#d6e2e4', '#f2e2c8'][i], { out: INK, outW: 2.2 }); flower5(g, 822 + i * 90, 520, 10, '#f0b440', '#c4553e', INK); }
     const fl = new Path2D(); fl.rect(-50, 1520, W + 100, 500); wc(g, fl, '#b47c48', { grain: .3, bloom: .2 }); g.strokeStyle = 'rgba(90,50,20,.4)'; g.lineWidth = 2.5; for (let i = 0; i < 9; i++) { g.beginPath(); g.moveTo(-50, 1560 + i * 50 + i * i * 4); g.lineTo(W + 50, 1560 + i * 50 + i * i * 4); g.stroke(); }
     g.save(); g.translate(540, 1720); g.scale(1, .3); for (let rr = 9; rr >= 1; rr--) { g.fillStyle = ['#e9b08f', '#f4e4c8', '#d9907c', '#f0d6a8'][rr % 4]; g.beginPath(); g.arc(0, 0, rr * 44, 0, 7); g.fill(); g.strokeStyle = 'rgba(150,80,50,.35)'; g.lineWidth = 3; g.setLineDash([6, 8]); g.stroke(); } g.setLineDash([]); g.restore();
-    g.fillStyle = '#6a4424'; g.fillRect(220, 760, 140, 16); g.beginPath(); g.arc(290, 776, 9, 0, 7); g.fill();
+    g.fillStyle = '#6a4424'; g.fillRect(300, 1255, 120, 14); g.beginPath(); g.arc(362, 1270, 8, 0, 7); g.fill(); g.strokeStyle = '#6a4424'; g.lineWidth = 6; g.beginPath(); g.moveTo(362, 1270); g.quadraticCurveTo(372, 1290, 360, 1296); g.stroke();
   });
 }
-const HALL = { floor: 1600, k: 1.5, shoeX: 420 };
+const HALL = { floor: 1600, k: 1.5, x0: 280, hook: [362, 1290] };
+const HALL_LS = 2 * 62 * 1.5;
+const HALL_SHOE = [280 + HALL_LS - 62 * 1.5 + 14, 1600 + 40];   // in front of where his left foot comes to rest
 function hallWuPose(t) {
-  const P = { x: 300, y: HALL.floor, k: HALL.k, cape: 'off', shoes: { R: true, L: t >= ACT['c.shoe'].t + .55 } };
-  // walks: right 4 steps, back left 2 steps, then exit right 6 steps
-  const n1 = walkN('hall1', t), n2 = walkN('hall2', t), n3 = walkN('hall3', t);
-  const k = HALL.k, Ls = 2 * HIP.wu * k;
-  let dir = 1, n = n1, base = 300, moving = walkMoving('hall1', t);
-  if (t >= WALKS.hall2.keys[0][0]) { base = 300 + 3 * Ls; dir = -1; n = n2; moving = walkMoving('hall2', t); }
-  if (t >= WALKS.hall3.keys[0][0]) { base = 300 + 1 * Ls; dir = 1; n = n3; moving = walkMoving('hall3', t); }
+  const k = HALL.k, Ls = HALL_LS;
+  const P = { x: HALL.x0, y: HALL.floor, k, cape: 'off', shoes: { R: true, L: t >= ACT['c.shoe'].t + .42 } };
+  let dir = 1, n = walkN('hall1', t), base = HALL.x0, moving = walkMoving('hall1', t);
+  if (t >= WALKS.hall2.keys[0][0]) { base = HALL.x0 + 2 * Ls; dir = -1; n = walkN('hall2', t); moving = walkMoving('hall2', t); }
+  if (t >= WALKS.hall3.keys[0][0]) { base = HALL.x0 + Ls; dir = 1; n = walkN('hall3', t); moving = walkMoving('hall3', t); }
   P.x = base; walkPose('wu', P, n, dir, moving);
-  // cape states
-  const grab = ease(prog('c.grab', t)), swing = prog('c.swing', t);
-  if (t >= ACT['c.swing'].t + .55) P.cape = 'open';
-  const tries = [['c.try1', .9, .35], ['c.try2', .92, .3], ['c.click', 1, 1]];
-  let fas = 0; for (const [id, peak, end] of tries) { const p = prog(id, t); if (p > 0) fas = p < .7 ? lerp(fas, peak, ease(p / .7)) : lerp(peak, end, ease((p - .7) / .3)); }
-  if (t >= ACT['c.click'].t + .45) { P.cape = 'on'; fas = 1; }
-  P.fasten = fas;
-  // hands
-  const hookL = toLocal(P, 290, 770);
-  let hR = [146, -82], hL = [-146, -82];
-  if (t < ACT['c.swing'].t + .7) { const up = grab - ease(clamp((t - ACT['c.swing'].t - .2) / .5)); hR = [lerp(146, hookL[0], clamp(up)), lerp(-82, hookL[1], clamp(up))]; }
-  if (t >= ACT['c.try1'].t - .3 && t < ACT['c.click'].t + .9) { const L1 = [lerp(-40, 20, fas), lerp(-60, -82, fas)], R1 = [lerp(80, 50, fas), lerp(-58, -82, fas)]; hL = [L1[0] - 6, L1[1] + 8]; hR = [R1[0] + 8, R1[1] + 8]; P.grip = { L: .6, R: .6 }; }
-  if (t >= ACT['c.click'].t + .9 && t < ACT['c.click'].t + 1.4) { hR = [60, -80]; }
+  const rest = { L: [-146, -82], R: [146, -82] };
+  let hL = rest.L, hR = rest.R;
+  // 1) reach the hook and grip the cape
+  const g = ease(prog('c.grab', t)), hook = toLocal(P, HALL.hook[0], HALL.hook[1] - 14);
+  hR = [lerp(rest.R[0], hook[0], g), lerp(rest.R[1], hook[1], g)];
+  const gripped = t >= ACT['c.grab'].t + .45;
+  // 2) lift it over his head with both hands
+  const lf = ease(prog('c.lift', t)), over = { L: [-62, -300], R: [62, -300] };
+  if (lf > 0) { hR = [lerp(hook[0], over.R[0], lf), lerp(hook[1], over.R[1], lf)]; hL = [lerp(rest.L[0], over.L[0], lf), lerp(rest.L[1], over.L[1], lf)]; }
+  // 3) swing it down over his back
+  const dp = prog('c.drape', t), de = ease(dp), shoulder = { L: [-122, -150], R: [122, -150] };
+  if (dp > 0) { hR = [lerp(over.R[0], shoulder.R[0], de), lerp(over.R[1], shoulder.R[1], de)]; hL = [lerp(over.L[0], shoulder.L[0], de), lerp(over.L[1], shoulder.L[1], de)]; }
+  if (gripped && dp < .5) { P.capeHeld = [lf > .05 || dp > 0 ? hL : [hR[0] - 40, hR[1]], hR]; P.capeDrop = lerp(250, 150, de); P.capeSwing = spring(t, ACT['c.lift'].t + .2, .8, 7, 3) + spring(t, ACT['c.drape'].t + .1, -.6, 7, 3); }
+  if (dp >= .5) { P.cape = 'open'; P.capeReveal = lerp(.72, 1, ease((dp - .5) / .5)); P.capeWave = spring(t, ACT['c.drape'].t + .3, 1.2, 8, 3); }
+  // 4) bring the collar ends together: one miss, then the click
+  const tr = prog('c.try1', t), ck = prog('c.click', t);
+  if (tr > 0) { const meet = { L: [-6, -88], R: [40, -88] }, apart = { L: [-60, -72], R: [96, -72] }; const a = tr < .45 ? ease(tr / .45) : 1 - ease((tr - .45) / .55);
+    const from = { L: shoulder.L, R: shoulder.R }, to = tr < .45 ? meet : apart; const u = tr < .45 ? a : ease((tr - .45) / .55);
+    hL = tr < .45 ? [lerp(from.L[0], meet.L[0] + 18, u), lerp(from.L[1], meet.L[1], u)] : [lerp(meet.L[0] + 18, apart.L[0], u), lerp(meet.L[1], apart.L[1], u)];
+    hR = tr < .45 ? [lerp(from.R[0], meet.R[0] - 18, u), lerp(from.R[1], meet.R[1], u)] : [lerp(meet.R[0] - 18, apart.R[0], u), lerp(meet.R[1], apart.R[1], u)]; }
+  if (ck > 0) { const u = ease(clamp(ck / .8)); hL = [lerp(-60, 8, u), lerp(-72, -86, u)]; hR = [lerp(96, 44, u), lerp(-72, -86, u)]; }
+  const clicked = t >= ACT['c.click'].t + .4;
+  if (clicked) { P.cape = 'on'; P.capeReveal = 1; const u = ease(clamp((t - ACT['c.click'].t - .55) / .4)); hL = [lerp(8, rest.L[0], u), lerp(-86, rest.L[1], u)]; hR = [lerp(44, rest.R[0], u), lerp(-86, rest.R[1], u)]; }
+  if (P.cape === 'open') { P.capeL = [hL[0] + 8, hL[1] + 4]; P.capeR = [hR[0] - 8, hR[1] + 4]; P.grip = { L: .6, R: .6 }; }
+  if (gripped && dp < .5) P.grip = { R: .7, L: lf > .3 ? .7 : 0 };
   P.hands = { L: hL, R: hR };
-  // face
-  const concentrate = t > ACT['c.try1'].t - .3 && t < ACT['c.click'].t + .5;
-  P.eye = face(concentrate ? .75 : 1, 0, concentrate ? .9 : 0); P.turn = concentrate ? 0 : .2;
-  P.mouth = concentrate ? { shape: 'flat', wob: 2 } : { shape: 'smile' };
-  for (const id of ['c.try1', 'c.try2']) { const p = prog(id, t); if (p > .75 && p < 1) { P.mouth = { shape: 'o', open: .4 }; P.eye.style = 'wide'; P.eye.wide = .4; } }
-  if (t > ACT['c.click'].t + .45 && t < ACT['c.click'].t + 1.4) { P.eye = face(1, 0, 0, 'happy'); P.mouth = { shape: 'open', open: .6 }; }
-  const nt = prog('c.notice', t); if (nt > 0 && t < ACT['c.shoe'].t + .7) { P.eye = face(1, -.8, .7, nt < .4 ? 'wide' : 'n'); P.eye.wide = .7; P.turn = -.35; P.mouth = { shape: 'o', open: .5 }; }
-  if (t > ACT['c.shoe'].t + .55 && t < ACT['c.exit'].t + .8) { P.eye = face(1, 0, 0, 'happy'); P.mouth = { shape: 'smile', open: .4 }; }
-  // shoe: the bare left foot lifts and slides into the slipper
+  if (t >= WALKS.hall1.keys[0][0] && !(moving)) { /* standing */ }
+  if (moving) { delete P.hands; }
+  // 5) the forgotten slipper: lift, step forward into it, settle back
   const sp = prog('c.shoe', t);
-  if (sp > 0 && sp < 1) { const sx = toLocal(P, HALL.shoeX, HALL.floor); const f0 = P.feet.L; const e = ease(sp); P.feet.L = [lerp(f0[0], sx[0], e), lerp(f0[1], sx[1], e) - hump(sp) * 26]; P.lean = (P.lean || 0) + hump(sp) * .06; }
-  P.leaf = spring(t, ACT['c.click'].t + .45, .25) + spring(t, ACT['c.notice'].t, -.3) + (P.sway || 0) * .06;
+  if (sp > 0 && sp < 1) {
+    const s0 = P.feet.L, tgt = toLocal(P, HALL_SHOE[0], HALL_SHOE[1]);
+    let f;
+    if (sp < .47) { const u = ease(sp / .47); f = [lerp(s0[0], tgt[0], u), lerp(s0[1], tgt[1], u) - Math.sin(Math.PI * u) * 34]; }
+    else if (sp < .7) { f = [tgt[0] + Math.sin((sp - .47) * 60) * 3, tgt[1]]; }          // toe wiggle into the shoe
+    else { const u = ease((sp - .7) / .3); f = [lerp(tgt[0], s0[0], u), lerp(tgt[1], s0[1], u) - Math.sin(Math.PI * u) * 24]; }
+    P.feet.L = f; P.lean = (P.lean || 0) + hump(sp) * .05; P.sq = (P.sq || 0) + (sp > .45 && sp < .55 ? .03 : 0);
+  }
+  // face
+  const fiddling = t > ACT['c.try1'].t - .2 && t < ACT['c.click'].t + .45;
+  P.turn = fiddling ? 0 : .15; P.eye = face(fiddling ? .78 : 1, 0, fiddling ? .9 : (lf > 0 && dp < 1 ? -.7 : 0)); P.mouth = fiddling ? { shape: 'flat', wob: 2 } : { shape: 'smile' };
+  if (g > 0 && g < 1) P.eye = face(1, .4, -.8);
+  if (tr > .42 && tr < 1) { P.mouth = { shape: 'o', open: .45 }; P.eye.style = 'wide'; P.eye.wide = .4; }
+  if (clicked && t < ACT['c.click'].t + 1.2) { P.eye = face(1, 0, 0, 'happy'); P.mouth = { shape: 'open', open: .6 }; }
+  const nt = prog('c.notice', t); if (nt > 0 && t < ACT['c.shoe'].t + .2) { P.eye = face(1, -.75, .8, nt < .5 ? 'wide' : 'n'); P.eye.wide = .7; P.turn = -.3; P.mouth = { shape: 'o', open: .5 }; }
+  if (sp > 0 && sp < 1) { P.eye = face(1, -.4, .9); P.mouth = { shape: 'flat', wob: 2 }; P.turn = -.15; }
+  if (t > ACT['c.shoe'].t + .45 && t < ACT['c.exit'].t + 1.0 && sp >= .6) { P.eye = face(1, .3, 0, 'happy'); P.mouth = { shape: 'smile', open: .4 }; }
+  P.leaf = spring(t, ACT['c.click'].t + .4, .25) + spring(t, ACT['c.notice'].t, -.3) + spring(t, ACT['c.lift'].t + .3, .2) + (P.sway || 0) * .06;
   idle(P, t, 11);
   return P;
 }
 SCENES.hall = (ctx, t) => {
   setCam(ctx, 1.45, 480, 1258); ctx.drawImage(buildHall(), 0, 0);
-  // cape on the hook until grabbed, then carried / swirling
-  const grab = prog('c.grab', t), swing = prog('c.swing', t);
+  const gripped = t >= ACT['c.grab'].t + .45;
+  // cape hanging on the hook until he lifts it off
+  if (!gripped) { const [hx, hy] = HALL.hook; const cp = new Path2D(); cp.moveTo(hx - 24, hy); cp.quadraticCurveTo(hx - 70, hy + 120, hx - 60, hy + 250); cp.quadraticCurveTo(hx, hy + 266, hx + 60, hy + 250); cp.quadraticCurveTo(hx + 70, hy + 120, hx + 24, hy); cp.closePath(); wc(ctx, cp, '#8b3438', { grain: .3, edge: '#5a1c1e', edgeW: 4, out: INK, outW: 3 }); ctx.strokeStyle = '#e2a443'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(hx - 60, hy + 246); ctx.quadraticCurveTo(hx, hy + 262, hx + 60, hy + 246); ctx.stroke(); flower5(ctx, hx + 26, hy + 24, 11, '#f0b440', '#c4553e', INK); }
   const P = hallWuPose(t);
-  if (grab < .6) { const cp = new Path2D(); cp.moveTo(270, 770); cp.quadraticCurveTo(232, 880, 240, 1020); cp.quadraticCurveTo(290, 1040, 340, 1020); cp.quadraticCurveTo(342, 880, 310, 770); cp.closePath(); wc(ctx, cp, '#8b3438', { grain: .3, edge: '#5a1c1e', edgeW: 4, out: INK, outW: 3 }); ctx.strokeStyle = '#e2a443'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(240, 1016); ctx.quadraticCurveTo(290, 1036, 340, 1016); ctx.stroke(); }
-  const shoeOn = t >= ACT['c.shoe'].t + .55;
-  if (!shoeOn) { const x = HALL.shoeX, y = HALL.floor; const s = new Path2D(); s.moveTo(x - 66, y); s.quadraticCurveTo(x - 66, y - 46, x - 10, y - 44); s.quadraticCurveTo(x + 62, y - 40, x + 66, y); s.quadraticCurveTo(x, y + 10, x - 66, y); wc(ctx, s, '#8e5a32', { grain: .3, out: INK, outW: 3 }); flower5(ctx, x + 6, y - 26, 13, '#f2c14e', '#e07a3a', INK); }
   RIG.wu(ctx, P);
-  if (grab >= .6 && swing < 1) { // cape bundle / sweep
-    const hd = toWorld(P, P.hands.R[0], P.hands.R[1]); const sw = ease(swing);
-    ctx.save(); ctx.translate(hd[0], hd[1]); ctx.rotate(lerp(.2, -2.6, sw)); const cp = new Path2D(); cp.moveTo(0, 0); cp.quadraticCurveTo(-60, 90 + sw * 40, -10, 190); cp.quadraticCurveTo(60, 200, 90, 160); cp.quadraticCurveTo(50, 80, 0, 0); cp.closePath(); wc(ctx, cp, '#8b3438', { grain: .3, out: INK, outW: 3 }); ctx.restore();
-  }
-  const ck = prog('c.click', t); if (ck > .75) { const q = toWorld(P, 44, -82); drawSparkle(ctx, q[0] + 30, q[1] - 30, 1.2, hump((ck - .75) / .25 * .5 + .5), '#f2b33a', .2); }
+  // the slipper waits on the floor in front of him
+  if (!(t >= ACT['c.shoe'].t + .42)) { const [x, y] = HALL_SHOE; const s = new Path2D(); s.moveTo(x - 66, y); s.quadraticCurveTo(x - 66, y - 46, x - 10, y - 44); s.quadraticCurveTo(x + 62, y - 40, x + 66, y); s.quadraticCurveTo(x, y + 10, x - 66, y); wc(ctx, s, '#8e5a32', { grain: .3, out: INK, outW: 3 }); flower5(ctx, x + 6, y - 26, 13, '#f2c14e', '#e07a3a', INK); }
+  const ck = prog('c.click', t); if (ck > .75) { const q = toWorld(P, 30, -86); drawSparkle(ctx, q[0] + 30, q[1] - 30, 1.2, hump((ck - .75) / .25 * .5 + .5), '#f2b33a', .2); }
   const nt = prog('c.notice', t); if (nt > 0 && nt < 1) { const q = toWorld(P, -60, -300); drawSparkle(ctx, q[0], q[1], 1.3, hump(nt), '#e8664a', -.4); }
   ctx.setTransform(1, 0, 0, 1, 0, 0);
 };
@@ -239,36 +270,33 @@ function drawBus(ctx, x0, y0, s, t, o = {}) { // side view, facing left; (x0,y0)
   ctx.strokeStyle = '#e9b833'; ctx.lineWidth = 10; ctx.beginPath(); ctx.moveTo(dx0 + 12 + 6, -Hb + 160); ctx.lineTo(dx0 + 12 + 6, -60); ctx.stroke(); ink(ctx, new Path2D(`M${dx0 + 12} ${-Hb + 160} L${dx0 + 12} -60 M${dx0 + 24} ${-Hb + 160} L${dx0 + 24} -60`), 2);
   ctx.restore();
 }
+// one ground under every foot: curb → door step → bus floor
+const busGround = x => x < 468 ? BUS.curb : x < 560 ? BUS.stepY : BUS.floorY;
+function boarder(who, id, x0, k, t, seed) {
+  const P = { x: x0, y: BUS.curb, k, cape: 'on', tt: t }; walkPose(who, P, walkN(id, t), 1, walkMoving(id, t), { lift: 30 });
+  const fx = f => P.x + P.feet[f][0] * k, gL = busGround(fx('L')), gR = busGround(fx('R'));
+  P.y = Math.max(gL, gR) - Math.abs(gL - gR) * .5;              // body sits between the two feet
+  for (const f of ['L', 'R']) { const gy = busGround(fx(f)); P.feet[f] = [P.feet[f][0], P.feet[f][1] + (gy - P.y) / k]; }
+  P.turn = .45; P.eye = face(1, .6, -.1); P.mouth = { shape: 'smile' }; idle(P, t, seed);
+  return P;
+}
 function busFriends(t) {
   const out = [], k = 1.15;
-  // 烏烏 boards: walk → one clear step up (rail contact) → in
-  { const P = { x: -458, y: BUS.curb, k, cape: 'on' }; walkPose('wu', P, walkN('bus.wu', t), 1, walkMoving('bus.wu', t));
-    const st = prog('b.step', t), inn = prog('b.in', t);
-    if (st > 0) { const e = ease(st); // front (R) foot up onto the step, body rises over it
-      P.feet.R = [lerp(P.feet.R[0], 70, e), lerp(P.feet.R[1], (BUS.stepY - BUS.curb) / k, e) - hump(st) * 34];
-      P.y = lerp(BUS.curb, BUS.stepY + 10, smooth(.45, 1, st)); P.lean = lerp(0, .12, hump(st)); P.feet.L = [P.feet.L[0], P.feet.L[1] + (BUS.curb - P.y) / k];
-    }
-    if (inn > 0) { const e = ease(inn); P.x += e * 160; P.y = lerp(BUS.stepY + 10, BUS.floorY, e); P.feet.L = [lerp(P.feet.L[0], -62, e), lerp(P.feet.L[1], 0, e) - hump(inn) * 30]; P.feet.R = [lerp(P.feet.R[0], 62, e), lerp(P.feet.R[1], 0, e)]; }
-    const rail = ease(prog('b.rail', t)); const railL = toLocal(P, BUS.rail, 1240);
-    if (rail > 0) { P.hands = { R: [lerp(146, railL[0], rail), lerp(-82, railL[1], rail)], L: [-150, -90] }; P.grip = { R: rail * .8 }; }
-    P.turn = .5; P.eye = face(1, .6, -.1); P.mouth = { shape: 'smile', open: .2 }; idle(P, t, 3);
-    out.push(['wu', P, inn > 0 ? 'in' : 'out', inn]); }
-  // 歸歸 and 杞杞 follow
-  for (const [who, id, x0, delay, sx] of [['gui', 'bus.gui', -446, 1.1, 1], ['qi', 'bus.qi', -490, 2.0, 1]]) {
-    const P = { x: x0, y: BUS.curb, k: k * .96 }; walkPose(who, P, walkN(id, t), 1, walkMoving(id, t));
-    const up = ease(clamp((t - (ACT['b.step'].t + delay)) / 1.2)); P.x += up * (who === 'gui' ? 330 : 440); P.y = lerp(BUS.curb, BUS.floorY, up); P.lift = (P.lift || 0) + hump(up) * 30;
-    P.turn = .4; P.eye = face(1, .5); P.mouth = { shape: 'smile' }; idle(P, t, who === 'gui' ? 5 : 7);
-    if (who === 'qi') P.hold = { L: (g, hx, hy) => drawCard(g, hx, hy + 20, 56, .3) };
-    out.push([who, P, up > .55 ? 'in' : 'out', up]);
-  }
-  return out;
+  const W0 = boarder('wu', 'bus.wu', -460, k, t, 3);
+  // 烏烏's hand finds the yellow rail as he climbs (one clear step, one clear grip)
+  const rl = ease(prog('b.rail', t)), off = clamp((W0.x - 560) / 60);
+  if (rl > 0 && off < 1) { const rail = toLocal(W0, 468, 1320); W0.hands = { R: [lerp(146, rail[0], rl * (1 - off)), lerp(-82, rail[1], rl * (1 - off))], L: [-146, -82] }; W0.grip = { R: .8 * rl * (1 - off) }; }
+  out.push(['wu', W0]);
+  const G = boarder('gui', 'bus.gui', -430, k * .96, t, 5); out.push(['gui', G]);
+  const Q = boarder('qi', 'bus.qi', -500, k * .96, t, 7); Q.hold = { L: (g, hx, hy) => drawCard(g, hx, hy + 20, 56, .3) }; out.push(['qi', Q]);
+  return out.map(([w, P]) => [w, P, P.x > 470 ? 'in' : 'out']);
 }
 SCENES.busstop = (ctx, t) => {
   setCam(ctx, 1, 540, 960); ctx.drawImage(buildBusStop(), 0, 0);
   const door = 1 - ease(prog('b.doors', t)) * 0;
   const F = busFriends(t);
   // inside-the-door figures are clipped into the doorway
-  drawBus(ctx, BUS.x0, BUS.stepY + 20, 1, t, { door: 1 - ease(clamp((t - 51.0) / .6)), inside: g => { g.save(); g.translate(-BUS.x0, -(BUS.stepY + 20)); for (const [w, P, where] of F) if (where === 'in') RIG[w](g, P); g.restore(); } });
+  drawBus(ctx, BUS.x0, BUS.stepY + 20, 1, t, { door: 1 - ease(prog('b.doors', t)), inside: g => { g.save(); g.translate(-BUS.x0, -(BUS.stepY + 20)); for (const [w, P, where] of F) if (where === 'in') RIG[w](g, P); g.restore(); } });
   for (const [w, P, where] of F) if (where === 'out') RIG[w](ctx, P);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
 };
@@ -318,29 +346,31 @@ function buildPark() {
     paintCanopy(g, 80, 260, 260, 200, 150, 86); paintCanopy(g, 1040, 220, 240, 190, 140, 87);
   });
 }
+const PARK = { bx: 40, s: .85, wheel: 1500, side: 1650 };
+// door (x≈70–210) → step → sidewalk in front of the bus; then along the sidewalk
+const parkGround = x => x < 150 ? PARK.wheel - 70 : x < 230 ? PARK.wheel - 10 : PARK.side;
 SCENES.parkstop = (ctx, t) => {
   setCam(ctx, 1, 540, 960); ctx.drawImage(buildPark(), 0, 0);
-  const away = ease(prog('p.away', t));
-  const bx = 120 + away * 1300, s = .62;
-  // bus at the stop (behind the path), pulling away to the right
-  drawBus(ctx, bx, 1350 - away * 20, s - away * .08, t, { door: 1 - ease(clamp((t - 60.0) / .5)) });
-  // the three step down from the door and walk toward the foreground
-  const out = [];
-  for (const [who, id, d0, x0] of [['wu', 'park.wu', 57.9, 150], ['gui', 'park.gui', 58.5, 150], ['qi', 'park.qi', 59.1, 150]]) {
-    if (t < d0 - .2) continue;
-    const down = ease(clamp((t - d0) / .9)); const k = lerp(.7, 1.2, down);
-    const P = { x: x0 + down * 60, y: lerp(1330, 1500, down), k, cape: 'on', tt: t };
-    walkPose(who, P, walkN(id, t), 1, walkMoving(id, t));
-    if (down < 1) { P.lift = (P.lift || 0) + hump(down) * 26; P.feet = P.feet; P.feet.R = [P.feet.R[0], P.feet.R[1] - hump(down) * 20]; }
-    P.turn = .35; P.eye = face(1, .5, -.1); P.mouth = { shape: 'smile' }; idle(P, t, x0 + d0);
-    if (who === 'qi' && t > 62.5) { P.hands = { L: [-84, -104], R: [110, lerp(-104, -220, hump(clamp((t - 62.5) / 1.6))) + Math.sin(t * 16) * 8] }; P.eye = face(1, -.8, -.2, 'happy'); }
-    if (who === 'qi') P.hold = { L: (g, hx, hy) => drawCard(g, hx, hy + 20, 56, .3) };
-    out.push([who, P]);
+  const away = easeIn(prog('p.away', t)), bx = PARK.bx - away * 1100;
+  const people = [];
+  for (const [who, id, x0, k, seed] of [['wu', 'park.wu', 60, 1.2, 1], ['gui', 'park.gui', 60, 1.15, 2], ['qi', 'park.qi', 60, 1.15, 3]]) {
+    if (t < WALKS[id].keys[0][0]) continue;
+    const P = { x: x0, y: 0, k, cape: 'on', tt: t }; walkPose(who, P, walkN(id, t), 1, walkMoving(id, t), { lift: 30 });
+    const fx = f => P.x + P.feet[f][0] * k, gL = parkGround(fx('L')), gR = parkGround(fx('R'));
+    P.y = Math.max(gL, gR) - Math.abs(gL - gR) * .5;
+    for (const f of ['L', 'R']) P.feet[f] = [P.feet[f][0], P.feet[f][1] + (parkGround(fx(f)) - P.y) / k];
+    P.turn = .35; P.eye = face(1, .5, -.1); P.mouth = { shape: 'smile' }; idle(P, t, seed);
+    if (who === 'qi') { P.hold = { L: (g, hx, hy) => drawCard(g, hx, hy + 20, 56, .3) }; if (t > 61.2) { P.turn = -.4; P.eye = face(1, -.8, -.2, 'happy'); P.hands = { L: [-84, -104], R: [110, -200 + Math.sin(t * 16) * 10] }; } }
+    people.push([who, P, P.x < 215 ? 'in' : 'out']);
   }
-  out.sort((a, b) => a[1].y - b[1].y).forEach(([w, P]) => RIG[w](ctx, P));
+  drawBus(ctx, bx, PARK.wheel, PARK.s, t, { door: 1 - ease(prog('p.close', t)), inside: g => { g.save(); g.translate(-bx, -PARK.wheel); g.scale(1 / PARK.s, 1 / PARK.s); g.translate(bx * (1 - PARK.s) / 1, 0); g.restore(); } });
+  // figures still in the doorway are masked by the door frame
+  const dx0 = bx + 30 * PARK.s, dw = 170 * PARK.s, top = PARK.wheel - 600 * PARK.s;
+  ctx.save(); ctx.beginPath(); ctx.rect(dx0, top, dw, PARK.wheel - top + 400); ctx.rect(dx0 + dw, -2000, 4000, 6000); ctx.clip();
+  people.filter(p => p[2] === 'in').forEach(([w, P]) => RIG[w](ctx, P)); ctx.restore();
+  people.filter(p => p[2] === 'out').sort((a, b) => a[1].y - b[1].y).forEach(([w, P]) => RIG[w](ctx, P));
   ctx.setTransform(1, 0, 0, 1, 0, 0);
 };
-
 // ===================== 07 · BRIDGE (low angle) & FIELD ===========================
 const BRIDGE = { y: x => 1500 - Math.sin(clamp((x + 120) / 1320) * Math.PI) * 140 };
 function buildBridge() {

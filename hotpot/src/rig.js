@@ -81,6 +81,8 @@ function drawFace(ctx, F, P) {
 
 // ---- shared limbs ---------------------------------------------------------------
 function arm(ctx, sx, sy, hx, hy, r, hr, fill, o = {}) {
+  const maxL = o.maxL || r * 6.2, dx = hx - sx, dy = hy - sy, dl = Math.hypot(dx, dy);
+  if (dl > maxL) { hx = sx + dx / dl * maxL; hy = sy + dy / dl * maxL; }
   const p = capsule(sx, sy, hx, hy, r, r * .9);
   fillShade(ctx, p, fill, { tex: o.tex, grain: .2 }); ink(ctx, p, 3.2);
   const sq = o.grip || 0;
@@ -145,12 +147,18 @@ function drawWu(ctx, P) {
     const turn = P.turn || 0, tex = patImg(ctx, IMG.wu_tex, 1);
     const cape = P.cape || 'off';  // 'off' | 'open' | 'on'
     // cape back drape
+    if (P.capeHeld) { // cloth hanging behind him from both hands
+      const [a, b] = P.capeHeld, drop = P.capeDrop || 230, sw = P.capeSwing || 0;
+      const hc = new Path2D(); hc.moveTo(a[0], a[1]); hc.quadraticCurveTo((a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - 18, b[0], b[1]);
+      hc.quadraticCurveTo(b[0] + 30 + sw * 30, b[1] + drop * .55, b[0] + 20 + sw * 50, b[1] + drop); hc.quadraticCurveTo((a[0] + b[0]) / 2 + sw * 40, Math.max(a[1], b[1]) + drop + 18, a[0] - 20 + sw * 50, a[1] + drop); hc.quadraticCurveTo(a[0] - 30 + sw * 30, a[1] + drop * .55, a[0], a[1]); hc.closePath();
+      fillShade(ctx, hc, '#8b3438', { tex: IMG.tex_cape ? patImg(ctx, IMG.tex_cape, .9) : null, texA: .4, dark: [(a[0] + b[0]) / 2, a[1] + drop * .6, drop], darkC: 'rgba(80,20,25,.45)' }); ink(ctx, hc, 3.2);
+    }
     if (cape !== 'off') {
-      const wave = (P.capeWave || 0);
+      const wave = (P.capeWave || 0), rv = P.capeReveal == null ? 1 : P.capeReveal, by = lerp(-150, -16, rv), bx = lerp(140, 185, rv);
       const cb = new Path2D(); cb.moveTo(-128, -165); cb.quadraticCurveTo(0, -190, 128, -165);
-      cb.quadraticCurveTo(175 + wave * 8, -80, 185 + wave * 12, -16); cb.quadraticCurveTo(90, -2 + wave * 4, 0, -10); cb.quadraticCurveTo(-90, -2 - wave * 4, -185 - wave * 6, -16); cb.quadraticCurveTo(-175, -80, -128, -165); cb.closePath();
+      cb.quadraticCurveTo(lerp(140, 175, rv) + wave * 8, lerp(-160, -80, rv), bx + wave * 12, by); cb.quadraticCurveTo(90, by + 14 + wave * 4, 0, by + 6); cb.quadraticCurveTo(-90, by + 14 - wave * 4, -bx - wave * 6, by); cb.quadraticCurveTo(-lerp(140, 175, rv), lerp(-160, -80, rv), -128, -165); cb.closePath();
       fillShade(ctx, cb, '#8b3438', { tex: IMG.tex_cape ? patImg(ctx, IMG.tex_cape, .9) : null, texA: .45, dark: [0, -90, 200], darkC: 'rgba(80,20,25,.5)' });
-      ctx.save(); ctx.clip(cb); ctx.strokeStyle = '#e2a443'; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(-185, -16); ctx.quadraticCurveTo(-90, -2, 0, -10); ctx.quadraticCurveTo(90, -2, 185, -16); ctx.stroke(); ctx.restore();
+      ctx.save(); ctx.clip(cb); ctx.strokeStyle = '#e2a443'; ctx.lineWidth = 9; ctx.beginPath(); ctx.moveTo(-bx, by); ctx.quadraticCurveTo(-90, by + 14, 0, by + 6); ctx.quadraticCurveTo(90, by + 14, bx, by); ctx.stroke(); ctx.restore();
       ink(ctx, cb, 3.2);
     }
     // feet (behind the body bottom)
@@ -184,6 +192,7 @@ function drawWu(ctx, P) {
       for (let i = 0; i < 5; i++) { ctx.save(); ctx.rotate(i * 1.2566); const pe = new Path2D(); pe.ellipse(0, -14, 10, 14, 0, 0, 7); ctx.fillStyle = '#f0b440'; ctx.fill(pe); ctx.fillStyle = '#c4553e'; ctx.beginPath(); ctx.ellipse(0, -14, 5, 8, 0, 0, 7); ctx.fill(); ink(ctx, pe, 2.4); ctx.restore(); }
       ctx.fillStyle = '#f6d36a'; ctx.beginPath(); ctx.arc(0, 0, 7, 0, 7); ctx.fill(); ink(ctx, new Path2D('M7 0 A7 7 0 1 1 7 -0.01'), 2); ctx.restore();
     }
+    if (P.layer) P.layer(ctx);
     // arms
     const sw = P.armSwing || 0;
     const hL = hp(P, 'L', [-146 - sw * 12, -82 + Math.abs(sw) * 4]), hR = hp(P, 'R', [146 + sw * 12, -82 + Math.abs(sw) * 4]);

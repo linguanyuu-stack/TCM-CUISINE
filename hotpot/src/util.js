@@ -2,7 +2,7 @@
 // 差點錯過的圍爐 — shared utilities (deterministic: everything is f(t))
 // ---------------------------------------------------------------------------
 'use strict';
-const W = 1080, H = 1920, FPS = 24, DUR = 150;
+const W = 1080, H = 1920, FPS = 24, DUR = 90, SCENE_DUR = 150;  // DUR = film length after the edit
 const END_CARD = '宜康中醫｜何首烏藥膳・天麻款';
 function mulberry32(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
