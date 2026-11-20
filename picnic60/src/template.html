@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一起圍爐 · Hot Pot Under the Ginkgo</title>
+<style>
+  :root { --bg: #efe4cf; --ink: #5a2c12; --mute: #8a6a4a; --panel: #f8f0e0; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #1f1812; --ink: #f1dcc0; --mute: #b09070; --panel: #2a2119; } }
+  :root[data-theme="dark"] { --bg: #1f1812; --ink: #f1dcc0; --mute: #b09070; --panel: #2a2119; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 12px 16px; box-sizing: border-box; }
+  #stage { position: relative; width: min(100%, calc((100vh - 92px) * 16 / 9)); aspect-ratio: 16/9; box-shadow: 0 6px 30px rgba(60,30,10,.25); border-radius: 6px; overflow: hidden; background: #f7ecd8; }
+  canvas { width: 100%; height: 100%; display: block; }
+  #ui { display: flex; gap: 10px; align-items: center; width: min(560px, 100%); background: var(--panel); padding: 8px 12px; border-radius: 10px; box-sizing: border-box; }
+  button { background: var(--ink); color: var(--panel); border: 0; border-radius: 6px; padding: 6px 12px; font-weight: 600; cursor: pointer; min-width: 64px; }
+  input[type=range] { flex: 1; accent-color: #c98a2a; }
+  #time { font-variant-numeric: tabular-nums; color: var(--mute); min-width: 92px; text-align: right; }
+  #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #7a3f1d; background: #f7ecd8; font-size: 18px; }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c" width="1920" height="1080"></canvas><div id="loading">painting…</div></div>
+<div id="ui"><button id="play">Play</button><input id="seek" type="range" min="0" max="60" step="0.01" value="0"><span id="time">0.00 / 60.00</span></div>
+<script>
+const ASSETS = /*ASSETS*/;
+</script>
+<script>
+/*CODE*/
+</script>
+<script>
+(async () => {
+  const params = new URLSearchParams(location.search);
+  const RANGE = /*RANGE*/;
+  const t0 = parseFloat(params.get('from') ?? RANGE[0]), t1 = parseFloat(params.get('to') ?? RANGE[1]);
+  const cv = document.getElementById('c'), seek = document.getElementById('seek'), btn = document.getElementById('play'), tl = document.getElementById('time');
+  seek.min = t0; seek.max = t1; seek.value = t0;
+  await FILM.init(cv); document.getElementById('loading').remove();
+  let playing = false, ac = null, src = null, startAt = 0, offset = t0, buf = null;
+  const show = t => { FILM.frame(t); tl.textContent = t.toFixed(2) + ' / ' + t1.toFixed(2); };
+  show(t0 + 0.001);
+  window.FILM = FILM;
+  async function ensureAudio() {
+    if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: AUDIO_SR });
+    if (!buf) { btn.textContent = '…'; await new Promise(r => setTimeout(r, 20)); const a = synthAudio(); buf = ac.createBuffer(2, a.L.length, AUDIO_SR); buf.copyToChannel(a.L, 0); buf.copyToChannel(a.R, 1); }
+  }
+  function now() { return playing ? offset + (ac.currentTime - startAt) : offset; }
+  async function play() {
+    await ensureAudio(); await ac.resume();
+    if (offset >= t1 - .05) offset = t0;
+    src = ac.createBufferSource(); src.buffer = buf; const g = ac.createGain(); g.gain.value = 1; src.connect(g).connect(ac.destination);
+    startAt = ac.currentTime + .05; src.start(startAt, offset, t1 - offset); playing = true; btn.textContent = 'Pause';
+    const loop = () => { if (!playing) return; const t = now(); if (t >= t1) { stop(); offset = t1; show(t1 - .001); return; } seek.value = t; show(Math.max(t0, t)); requestAnimationFrame(loop); };
+    requestAnimationFrame(loop);
+  }
+  function stop() { if (src) { try { src.stop(); } catch (e) {} src = null; } offset = now(); playing = false; btn.textContent = 'Play'; }
+  btn.onclick = () => playing ? stop() : play();
+  seek.oninput = () => { const was = playing; if (was) stop(); offset = parseFloat(seek.value); show(offset); if (was) play(); };
+  document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); btn.click(); } });
+})();
+</script>
+</body>
+</html>

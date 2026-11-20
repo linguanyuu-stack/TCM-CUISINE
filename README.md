@@ -58,3 +58,26 @@ The cut is an edit list (`EDL` in `hotpot/src/cues.js`): each shot plays a range
 python3 hotpot/tools/build.py                       # → dist/hotpot.html
 node tools/render.js dist/hotpot.html dist/The_Hot_Pot_Gathering_I_Almost_Missed_90s.mp4 0 90
 ```
+
+---
+
+# 一起圍爐 · Hot Pot Under the Ginkgo (60 s, 16:9)
+
+1920×1080, 24 fps, music and sound effects, no voiceover. Source is in `picnic60/`.
+
+| file | what |
+|---|---|
+| `dist/picnic60.html` | Self-contained player (WebGL2). Click Play or press Space. |
+| `dist/Hot_Pot_Under_the_Ginkgo_60s.mp4` | Rendered film, −16 LUFS. Not committed. |
+| `dist/picnic60_contact_sheet_1fps.jpg` | One frame per second. |
+
+- **One park set, one cast** (`picnic60/src/world.js`). Every shot is a different camera on the same world, so seats, cups, the pot and the lanterns stay in the same places across cuts.
+- **Rigs** are the hot pot film's rigs with short, tapered arms and mitten hands. Hand targets are clamped to arm reach, and when a character reaches for something it bends (squash and lean) instead of stretching its arm.
+- **WebGL2 compositor** (`gl.js`): the painted background and foreground are separate textures, so fireworks and stars sit behind the canopy and the cast. It adds light rays through the canopy gaps (a two-pass radial blur), day/dusk/night grading, lantern bloom, vignette and seeded grain.
+- **Gray crowd (路人甲):** soft, unoutlined, muted figures that stroll, picnic, chat, gather at dusk and look up and cheer at the fireworks.
+- **Cue list** (`cues.js`): shots, actions with their sound effects, walks (one footfall per planted step), ambience levels and music.
+
+```bash
+python3 picnic60/tools/build.py
+node picnic60/tools/render_par.js dist/picnic60.html dist/Hot_Pot_Under_the_Ginkgo_60s.mp4 4
+```
