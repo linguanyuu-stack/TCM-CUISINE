@@ -1492,8 +1492,8 @@ const CAMS = {
   fw:      [[960, 470, .94], [960, 462, .93]],
   promise: [[792, 772, 2.3], [792, 778, 2.48]],
 };
-function camAt(t) {
-  const s = shotAt(t), u = ease((t - s.t) / (s.end - s.t));
+function camAt(t, camShot) {
+  const s = camShot ? SHOTS.find(x => x.id.startsWith(camShot)) : shotAt(t), u = ease((t - s.t) / (s.end - s.t));
   if (s.cam === 'arrive') { const P = walkN('wu', t), Ls = 2 * HIP.wu * SEAT.wu[2], x = SEAT.wu[0] - 11 * Ls + P * Ls; return { x: clamp(x + 300, 520, 900), y: 760, z: 1.65 }; }
   const [a, b] = CAMS[s.cam]; return { x: lerp(a[0], b[0], u), y: lerp(a[1], b[1], u), z: lerp(a[2], b[2], u) };
 }
@@ -1532,8 +1532,8 @@ function drawFireworks(ctx, t, cam) {
 // =================================================================================
 // FRAME: scene (graded), emissive (added after grade), occluder (for light rays)
 // =================================================================================
-function renderWorld(sc, fg, em, ef, oc, t) {
-  const cam = camAt(t), L = buildLayers(), k = tod(t), night = t >= 44.6;
+function renderWorld(sc, fg, em, ef, oc, t, camShot) {
+  const cam = camAt(t, camShot), L = buildLayers(), k = tod(t), night = t >= 44.6;
   const dof = clamp((cam.z - 1.6) / 1.0) * .9;
   // sky
   sc.setTransform(1, 0, 0, 1, 0, 0); const cols = skyCols(k);
